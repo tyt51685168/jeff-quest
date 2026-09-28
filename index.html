@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Jeff Tu 的像素 RPG 履歷：走過台科大、勤業眾信、遠傳與胡志明市，收集 7 枚徽章。A pixel RPG résumé of data analyst Jeff Tu.">
+<meta property="og:title" content="Jeff Quest">
+<meta property="og:description" content="A 5–10 minute pixel RPG résumé of data analyst Jeff Tu.">
+<meta name="theme-color" content="#0b0c1c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%2315173a'/%3E%3Cpath fill='%23f2c14e' d='M7 2h2v3h3v2h-3v1h2v2h-2v4H7v-4H5V8h2V7H4V5h3z'/%3E%3C/svg%3E">
+<title>Jeff Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: dark;
+  --void:#0b0c1c; --win:#15173a; --win2:#20245a; --edge:#f4efe3; --ink:#f4efe3;
+  --muted:#aeb0d4; --gold:#f2c14e; --teal:#3fb6a8; --rose:#e76f7a; --line:#3b3f7a;
+  --pix:"DotGothic16","Noto Sans TC","PingFang TC","Microsoft JhengHei",monospace;
+  --disp:"Pixelify Sans","DotGothic16","Noto Sans TC",monospace;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--void);overflow:hidden;color:var(--ink);font-family:var(--pix);-webkit-font-smoothing:none;}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,a:focus-visible{outline:2px dashed var(--gold);outline-offset:3px}
+#app{position:fixed;inset:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#game{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .18s steps(4)}
+#fade.on{opacity:1}
+
+/* DQ-style window */
+.win{background:var(--win);border:3px solid var(--edge);border-radius:8px;
+  box-shadow:0 0 0 3px var(--void),inset 0 0 0 2px var(--win),inset 0 0 0 4px var(--line),0 8px 0 3px rgba(0,0,0,.35)}
+
+/* HUD */
+#hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 16px 0;pointer-events:none}
+#loc{font-size:clamp(13px,1.6vw,16px);padding:8px 14px;opacity:0;transform:translateY(-6px);transition:opacity .3s steps(3),transform .3s steps(3);max-width:60vw}
+#loc.show{opacity:1;transform:none}
+.hud-r{display:flex;gap:8px;pointer-events:auto}
+.chip{font-size:14px;padding:7px 11px;background:var(--win);border:2px solid var(--edge);border-radius:6px;box-shadow:0 0 0 2px var(--void);line-height:1}
+.chip:hover{background:var(--win2)}
+.chip .star{color:var(--gold)}
+.chip.pop{animation:pop .6s steps(3) 2}
+@keyframes pop{50%{background:var(--gold);color:var(--void)}}
+#bMusic[aria-pressed="true"]{color:var(--gold)}
+
+/* dialog */
+#dialog{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  width:min(780px,calc(100% - 32px));min-height:6.6em;padding:18px 22px 20px;font-size:clamp(15px,2vw,19px);line-height:1.65;cursor:pointer}
+body.touch #dialog{bottom:calc(178px + env(safe-area-inset-bottom,0px))}
+#dName{position:absolute;top:-17px;left:18px;background:var(--gold);color:#1b1530;padding:2px 12px;border:2px solid var(--void);border-radius:4px;font-size:.82em;letter-spacing:.04em}
+#dName:empty{display:none}
+#dText{white-space:pre-wrap;word-break:break-word}
+#dNext{position:absolute;right:16px;bottom:8px;color:var(--gold);font-size:.8em;animation:bob .8s steps(2) infinite;visibility:hidden}
+#dNext.on{visibility:visible}
+@keyframes bob{50%{transform:translateY(3px)}}
+#dChoices{display:flex;flex-direction:column;gap:2px;margin-top:8px}
+#dChoices:empty{display:none}
+.opt{text-align:left;padding:3px 8px 3px 26px;position:relative;border-radius:4px}
+.opt.sel::before{content:"▶";position:absolute;left:6px;color:var(--gold);animation:blink .7s steps(2) infinite}
+.opt:hover{background:var(--win2)}
+@keyframes blink{50%{opacity:.2}}
+
+/* menu */
+#menu{position:absolute;right:16px;top:calc(60px + env(safe-area-inset-top,0px));min-width:210px;padding:14px 10px;font-size:17px}
+#menu h2{font:700 13px var(--disp);letter-spacing:.2em;color:var(--muted);margin:0 0 6px 14px}
+#menu .opt{display:block;width:100%;padding:6px 10px 6px 30px}
+
+/* panel */
+#panel{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:rgba(6,7,20,.72);padding:16px}
+.panel-win{position:relative;width:min(820px,100%);max-height:calc(100% - 24px);overflow:auto;padding:26px clamp(18px,4vw,36px) 30px;
+  font-size:16px;line-height:1.7;overscroll-behavior:contain;-webkit-user-select:text;user-select:text}
+.panel-win .x{position:sticky;top:-10px;float:right;margin:-12px -14px 0 0;font-size:14px;padding:6px 10px;border:2px solid var(--edge);border-radius:6px;background:var(--win)}
+.panel-win h2{font:700 clamp(24px,4vw,34px)/1.1 var(--disp);letter-spacing:.04em;margin:0 0 4px;color:var(--gold);text-wrap:balance}
+.panel-win h3{font:700 15px var(--disp);letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin:26px 0 8px;display:flex;gap:10px;align-items:center}
+.panel-win h3::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--line) 0 4px,transparent 4px 8px)}
+.panel-win p{margin:6px 0;max-width:68ch}
+.eyebrow{font:700 12px var(--disp);letter-spacing:.24em;color:var(--muted);margin:0 0 6px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.portrait{width:112px;height:112px;image-rendering:pixelated;background:var(--win2);border:2px solid var(--line);border-radius:6px;flex:none}
+dl.stats{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0;flex:1;min-width:220px}
+dl.stats dt{color:var(--muted);font-size:14px}
+dl.stats dd{margin:0}
+.traits{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.traits li{background:var(--win2);border:2px solid var(--line);border-radius:6px;padding:10px 12px}
+.traits b{color:var(--gold);display:block;font-weight:400}
+.skillgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.skill{border:2px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--win2)}
+.skill h4{margin:0 0 6px;font-weight:400;display:flex;align-items:center;gap:8px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:13px;padding:1px 8px;border:1px solid var(--muted);border-radius:3px}
+.gem{display:inline-block;width:18px;height:18px;flex:none;background:var(--c,#555);clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%);
+  box-shadow:inset -4px -4px 0 rgba(0,0,0,.25),inset 3px 3px 0 rgba(255,255,255,.35)}
+.gem.off{background:#3a3d63;box-shadow:none}
+.badgelist{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.badgelist li{display:flex;gap:12px;align-items:center;border:2px solid var(--line);border-radius:6px;padding:10px 12px}
+.badgelist li.got{border-color:var(--gold)}
+.badgelist small{display:block;color:var(--muted);font-size:13px;line-height:1.4}
+.job{margin:14px 0 18px}
+.job .top{display:flex;justify-content:space-between;gap:4px 16px;flex-wrap:wrap}
+.job .role{color:var(--gold)}
+.job .time{color:var(--muted);font-variant-numeric:tabular-nums;font-size:14px}
+.job .lead{color:var(--muted);font-size:14px;margin:2px 0 4px}
+.job ul{margin:4px 0 0;padding-left:1.2em}
+.job li{margin:3px 0;max-width:72ch}
+.job li::marker{content:"◆ ";color:var(--teal);font-size:.7em}
+.contact{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px}
+.btn{display:inline-block;padding:8px 14px;border:2px solid var(--edge);border-radius:6px;background:var(--win2);text-decoration:none;color:var(--ink);font-size:15px}
+.btn:hover{background:var(--gold);color:var(--void)}
+.btn.primary{background:var(--gold);color:var(--void)}
+code.mail{font-family:inherit;background:var(--void);padding:6px 10px;border-radius:4px;border:1px dashed var(--line)}
+.chart{display:grid;gap:10px;margin:14px 0}
+.bar{display:grid;grid-template-columns:5.5em 1fr 3.5em;gap:10px;align-items:center}
+.bar .track{height:22px;background:var(--void);border:2px solid var(--line)}
+.bar .fill{height:100%;background:repeating-linear-gradient(90deg,var(--c) 0 6px,color-mix(in srgb,var(--c) 70%,#000) 6px 8px)}
+.bar .v{font-variant-numeric:tabular-nums;text-align:right}
+.big{font:700 clamp(40px,8vw,64px)/1 var(--disp);color:var(--gold)}
+.statline{display:flex;gap:24px;flex-wrap:wrap;margin:10px 0}
+.statline div{display:flex;flex-direction:column}
+.statline b{font:700 28px var(--disp);color:var(--teal);font-weight:700}
+
+/* title */
+#title{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at center,rgba(11,12,28,.78) 0%,rgba(11,12,28,.55) 45%,rgba(11,12,28,.3) 100%)}
+.title-card{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:560px}
+.logo{margin:0;font:700 clamp(56px,13vw,124px)/.86 var(--disp);letter-spacing:.02em;color:var(--gold);
+  text-shadow:4px 4px 0 #b3541e,8px 8px 0 var(--void);}
+.logo span{display:block;color:var(--ink);text-shadow:4px 4px 0 var(--teal),8px 8px 0 var(--void)}
+.sub{margin:10px 0 6px;font-size:clamp(15px,2.2vw,19px);text-shadow:2px 2px 0 var(--void)}
+.title-menu{min-width:min(320px,100%);padding:14px 10px;display:flex;flex-direction:column;gap:2px;font-size:18px}
+.title-menu .opt{padding:7px 10px 7px 32px}
+.langsw{display:flex;gap:6px;justify-content:center;margin-top:8px;font-size:14px}
+.langsw button{padding:4px 10px;border:2px solid var(--line);border-radius:4px}
+.langsw button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+.hint{font-size:13px;color:var(--muted);text-shadow:1px 1px 0 var(--void);margin:4px 0 0}
+
+/* touch pad */
+#pad{display:none;position:absolute;left:0;right:0;bottom:0;height:0}
+body.touch #pad.on{display:block}
+#dpad{position:absolute;left:18px;bottom:calc(22px + env(safe-area-inset-bottom,0px));width:138px;height:138px;border-radius:50%;
+  background:rgba(21,23,58,.55);border:2px solid rgba(244,239,227,.5)}
+#dpad i{position:absolute;width:44px;height:44px;background:rgba(244,239,227,.18);border:2px solid rgba(244,239,227,.6);border-radius:6px}
+#dpad i.u{left:45px;top:4px}#dpad i.d{left:45px;bottom:4px}#dpad i.l{left:4px;top:45px}#dpad i.r{right:4px;top:45px}
+#dpad i.on{background:var(--gold)}
+.abtn{position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border-radius:50%;
+  background:rgba(21,23,58,.7);border:3px solid var(--edge);font:700 22px var(--disp)}
+#aBtn{right:18px;bottom:calc(62px + env(safe-area-inset-bottom,0px));color:var(--gold)}
+#bBtn{right:96px;color:var(--teal)}
+.abtn:active{background:var(--gold);color:var(--void)}
+
+#prompt{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom,0px));padding:7px 14px;font-size:15px;white-space:nowrap;pointer-events:none;z-index:5}
+body.touch #prompt{bottom:calc(182px + env(safe-area-inset-bottom,0px))}
+kbd{font:inherit;font-size:.8em;background:var(--gold);color:var(--void);padding:1px 7px;border-radius:3px;margin-right:6px;box-shadow:0 2px 0 #9c6f12}
+.ill{background:var(--void);border:2px solid var(--line);border-radius:6px;padding:8px;margin:16px 0 12px;display:flex;justify-content:center}
+.ill canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%}
+.illcap{margin:0;padding-left:1.2em}.illcap li{margin:4px 0;max-width:70ch}.illcap li::marker{content:"◆ ";color:var(--gold);font-size:.7em}
+#toast{position:absolute;z-index:40;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:8px 16px;font-size:15px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+</head>
+<body>
+<div id="app">
+  <canvas id="game" role="img" aria-label="Jeff Quest pixel world"></canvas>
+  <div id="fade"></div>
+  <div id="hud" hidden>
+    <div id="loc" class="win"></div>
+    <div class="hud-r">
+      <button id="bBadges" class="chip" type="button"><span class="star">★</span> <span id="badgeCount">0</span>/7</button>
+      <button id="bMusic" class="chip" type="button" aria-pressed="false" aria-label="Music">♪</button>
+      <button id="bMenu" class="chip" type="button">MENU</button>
+    </div>
+  </div>
+  <div id="dialog" class="win" hidden><div id="dName"></div><div id="dText"></div><div id="dChoices"></div><div id="dNext">▼</div></div>
+  <div id="prompt" class="win" hidden></div>
+  <div id="menu" class="win" hidden></div>
+  <div id="panel" hidden><div class="win panel-win" id="panelWin"><button class="x" type="button" id="panelX">✕ ESC</button><div id="panelBody"></div></div></div>
+  <div id="title">
+    <div class="title-card">
+      <p class="eyebrow" id="tEyebrow">A PIXEL RÉSUMÉ</p>
+      <h1 class="logo">JEFF<span>QUEST</span></h1>
+      <p class="sub" id="tSub"></p>
+      <div class="win title-menu" id="tMenu"></div>
+      <div class="langsw"><button type="button" data-lang="zh">中文</button><button type="button" data-lang="en">English</button></div>
+      <p class="hint" id="tHint"></p>
+    </div>
+  </div>
+  <div id="pad">
+    <div id="dpad"><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i></div>
+    <button id="bBtn" class="abtn" type="button">B</button>
+    <button id="aBtn" class="abtn" type="button">A</button>
+  </div>
+  <div id="toast" class="win"></div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+/* ================= basics ================= */
+const T=16;
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+const $=s=>document.querySelector(s);
+const isTouch=matchMedia('(pointer:coarse)').matches||('ontouchstart' in window&&navigator.maxTouchPoints>0);
+if(isTouch)document.body.classList.add('touch');
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Z=(zh,en)=>({zh,en});
+let LANG=(navigator.language||'').toLowerCase().startsWith('zh')?'zh':'en';
+try{const l=localStorage.getItem('jq_lang');if(l==='zh'||l==='en')LANG=l;}catch(e){}
+const tx=o=>o==null?'':(typeof o==='string'?o:(o[LANG]??o.zh));
+const hash=(x,y,s=0)=>{let h=(x*374761393+y*668265263+s*982451653)|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967296;};
+const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+const DV={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+const OPP={up:'down',down:'up',left:'right',right:'left'};
+
+/* ================= 3x5 pixel font for signs ================= */
+const FONT={A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110','4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001110','.':'000000000000010','-':'000000111000000','!':'010010010000010','?':'110001010000010',':':'000010000010000','>':'100010001010100','<':'001010100010001','=':'000111000111000','+':'000010111010000','(':'010100100100010',')':'010001001001010','/':'001001010100100','|':'010010010010010',',':'000000000010100','#':'101111101111101'};
+function ptext(g,str,x,y,col,sc=1){g.fillStyle=col;let cx=x;for(const ch of str.toUpperCase()){const f=FONT[ch];if(f)for(let i=0;i<15;i++)if(f[i]==='1')g.fillRect(cx+(i%3)*sc,y+((i/3)|0)*sc,sc,sc);cx+=4*sc;}}
+const ptw=(s,sc=1)=>s.length*4*sc-sc;
+
+/* ================= sprites ================= */
+function mk(rows,pal){const c=document.createElement('canvas');c.width=16;c.height=rows.length;const g=c.getContext('2d');
+  rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const ch=r[x];if(ch!=='.'&&pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1);}}});return c;}
+const mir=a=>a.map(h=>h+[...h].reverse().join(''));
+const flip=a=>a.map(r=>[...r].reverse().join(''));
+const setc=(rows,y,x,ch)=>{rows[y]=rows[y].slice(0,x)+ch+rows[y].slice(x+1);};
+const HEAD_D=mir(["........",".....ooo","....ohhh","...ohhhh","...ohhhh","...ohsss","...ohses","...ohsss","....osss"]);
+const HEAD_U=mir(["........",".....ooo","....ohhh","...ohhhh","...ohhhh","...ohhhh","...ohhhh","...ohhhh","....ohhh"]);
+const BODY_D=mir(["...occcc","..occccc","..oscccc"]);
+const LEG_D={s:["...oppppppppo...","...oppo..oppo...","...okko..okko...","....oo....oo...."],
+  a:["...oppppppppo...","...oppo..okko...","...okko...oo....","....oo.........."],
+  b:["...oppppppppo...","...okko..oppo...","....oo...okko...","..........oo...."]};
+const SIDE_HEAD=["................","......ooooo.....",".....ohhhhho....","....ohhhhhhho...","....ohhhhhhhho..","....ohhhhhssso..","....ohhhhsseso..","....ohhhssssso..",".....ohssssso..."];
+const SIDE_BODY=[".....occcccco...",".....occccccco..",".....occscccco.."];
+const SIDE_LEG={s:["......opppppo...","......oppppo....","......okkkko....",".......oooo....."],
+  a:["......opppppo...",".....oppo.oppo..",".....okko.okko..","......oo...oo..."]};
+const BASEPAL={o:'#1d1726',e:'#1d1726',s:'#f2c49b',k:'#3a2b2b'};
+function charSprites(p){
+  const pal={...BASEPAL,h:p.h,c:p.c,p:p.p};
+  const longify=(rows,side)=>{if(!p.long)return rows;rows=[...rows];
+    if(side){setc(rows,8,5,'h');setc(rows,9,5,'h');setc(rows,8,4,'o');}
+    else{for(const y of[8,9,10]){setc(rows,y,3,'h');setc(rows,y,12,'h');}setc(rows,8,2,'o');setc(rows,8,13,'o');}
+    return rows;};
+  const d=l=>longify([...HEAD_D,...BODY_D,...LEG_D[l]]);
+  const u=l=>longify([...HEAD_U,...BODY_D,...LEG_D[l]]);
+  const r=l=>longify([...SIDE_HEAD,...SIDE_BODY,...SIDE_LEG[l]],true);
+  const set={down:[d('s'),d('a'),d('s'),d('b')],up:[u('s'),u('a'),u('s'),u('b')],right:[r('s'),r('a'),r('s'),r('a')]};
+  set.left=set.right.map(flip);
+  const out={};for(const k in set)out[k]=set[k].map(rows=>mk(rows,pal));
+  return out;
+}
+const CORGI_R=["................","................","................","................","..........o.o...",".........oyoyo..",".........oyyyyo.",".........oyeyyyo",".oo......oywwwwe",".oyoooooooyywwo.","..oyyyyyyyyywwo.","..oyyyyyyyywwwo.","..owwwwwwwwwwwo.","...oowoooowoo...","...oo....oo.....","................"];
+const CORGI_R2=[...CORGI_R];CORGI_R2[14]="....oo....oo....";
+const CPAL={o:'#2a1b16',y:'#e8913a',w:'#fbf3e4',e:'#1d1726'};
+const CORGI={right:[mk(CORGI_R,CPAL),mk(CORGI_R2,CPAL)],left:[mk(flip(CORGI_R),CPAL),mk(flip(CORGI_R2),CPAL)]};
+
+const CHAR_PAL={
+  jeff:{h:'#262033',c:'#2a9d8f',p:'#2f3553'},
+  prof:{h:'#c9c9d6',c:'#7a5536',p:'#3b3b4f'}, senior:{h:'#4a3020',c:'#f2c14e',p:'#3d5a80'},
+  classmate:{h:'#1f1a24',c:'#e76f7a',p:'#2f3553',long:1}, manager:{h:'#1b1822',c:'#34495e',p:'#23303d'},
+  coworker:{h:'#6d3d2a',c:'#a9c4de',p:'#3b3b4f',long:1}, boss:{h:'#3b3b40',c:'#1e2a4a',p:'#1e2a4a'},
+  marketing:{h:'#2b1d14',c:'#e9885f',p:'#3b3b4f',long:1}, engineer:{h:'#15121c',c:'#577590',p:'#2f2f3a'},
+  master:{h:'#eeeeee',c:'#8c2f2f',p:'#5a2020'}, owner:{h:'#241a16',c:'#f2a541',p:'#3d405b'},
+  customer:{h:'#8a5a2b',c:'#90be6d',p:'#3d405b',long:1}, ktvboss:{h:'#1a1320',c:'#8f4bd8',p:'#2a1d3a'},
+  oldman:{h:'#dcdcdc',c:'#6a994e',p:'#4a4035'}, fresh:{h:'#2a1d14',c:'#4cc9f0',p:'#3d405b'},
+  office:{h:'#2a2a33',c:'#dfe6ee',p:'#2b2d42',long:1}, disciple:{h:'#1d1a22',c:'#e9e2d0',p:'#8c2f2f'},
+  fisher:{h:'#5c4632',c:'#3d7ea6',p:'#4a4035'}, vendor:{h:'#1a1614',c:'#d62828',p:'#2f2f3a',long:1},
+  tourist:{h:'#e9c46a',c:'#ff8fab',p:'#3d5a80'}, keeper:{h:'#1f1a24',c:'#f2c14e',p:'#2f3553'},
+};
+const SPR={};for(const k in CHAR_PAL)SPR[k]=charSprites(CHAR_PAL[k]);
+
+/* ================= content ================= */
+const N={corgi:Z('柯基','Corgi'),prof:Z('教授','Professor'),senior:Z('學長','Senior student'),classmate:Z('同學','Classmate'),
+  manager:Z('經理','Manager'),coworker:Z('同事','Colleague'),boss:Z('高層主管','C-level exec'),marketing:Z('行銷同事','Marketing lead'),
+  engineer:Z('資料工程師','Data engineer'),master:Z('道館主人','Hall master'),owner:Z('旅行社老闆','Agency owner'),customer:Z('客人','Customer'),
+  ktvboss:Z('KTV 店長','KTV manager'),oldman:Z('老爺爺','Old man'),fresh:Z('新生','Freshman'),office:Z('上班族','Office worker'),
+  disciple:Z('道館弟子','Disciple'),fisher:Z('釣客','Fisher'),vendor:Z('咖啡攤老闆','Coffee vendor'),tourist:Z('觀光客','Tourist'),keeper:Z('守門人','Gatekeeper')};
+const say=(n,zh,en)=>({n,t:Z(zh,en)});
+const nar=(zh,en)=>({n:null,t:Z(zh,en)});
+const badge=id=>({badge:id});
+const panel=id=>({panel:id});
+const choice=(n,q,opts,then)=>({choice:opts,n,q,then});
+
+const BADGES=[
+  {id:'heart',n:Z('心之徽章','Heart Badge'),c:'#e76f7a',where:Z('Jeff 的家',"Jeff's House"),what:Z('興趣・性格・語言','Hobbies · personality · languages')},
+  {id:'scholar',n:Z('學者徽章','Scholar Badge'),c:'#6fa8dc',where:Z('台科大','NTUST'),what:Z('學歷','Education')},
+  {id:'audit',n:Z('稽核徽章','Audit Badge'),c:'#86c06c',where:Z('勤業眾信','Deloitte'),what:Z('顧問 2020–2022','Consultant 2020–2022')},
+  {id:'skill',n:Z('技能徽章','Skill Badge'),c:'#f2c14e',where:Z('技能道館','the Skill Hall'),what:Z('技能樹','Skill tree')},
+  {id:'signal',n:Z('訊號徽章','Signal Badge'),c:'#3fb6a8',where:Z('遠傳大樓','the Far EasTone Tower'),what:Z('數據分析師 2022–2025','Data analyst 2022–2025')},
+  {id:'compass',n:Z('羅盤徽章','Compass Badge'),c:'#f4a259',where:Z('胡志明市的旅行社','the travel agency in Saigon'),what:Z('官網與導遊','Website & tour guiding')},
+  {id:'mic',n:Z('麥克風徽章','Mic Badge'),c:'#b07cf0',where:Z('胡志明市的 KTV','the KTV in Saigon'),what:Z('訂房系統與儀表板','Booking system & dashboards')},
+];
+
+const PROFILE={
+  name:'Jeff Tu（Ying-Ting Tu）',
+  cls:Z('數據分析師｜行銷・電商・電信','Data Analyst · Marketing, E-commerce, Telecom'),
+  exp:Z('5 年以上','5+ years'),
+  base:Z('台灣 ⇄ 胡志明市','Taiwan ⇄ Ho Chi Minh City'),
+  langs:Z('中文（母語）・English・台語・客語','Mandarin (native) · English · Taiwanese Hokkien · Hakka'),
+  summary:Z('5 年以上把行為與交易數據轉成營收成長的經驗，橫跨電信與電商。從 ETL、建模到對高層說故事，整個分析流程都能自己扛；現在也親手做出洞察背後的產品，對外網站、內部訂房與報表系統都從零做到上線。中英雙語，長期往返台灣與越南，跨境、面對客戶、技術工作都能上手。',
+    'Data analyst with 5+ years turning behavioral and transactional data into revenue growth across telecom and e-commerce. Owns the full analytics cycle, from ETL and modeling to C-level storytelling, and increasingly ships the products behind the insights: customer-facing websites and internal booking and reporting systems, built end-to-end. Bilingual (Mandarin / English) with an active Taiwan–Vietnam footprint, comfortable across cross-border, customer-facing and technical work.'),
+  email:'tyt51685168@gmail.com',
+  linkedin:'https://www.linkedin.com/in/ying-ting-tu-444aa1149/',
+};
+const TRAITS=[
+  {n:Z('直球對決','Straight shooter'),d:Z('說話直接、誠實，還有一點大膽。不繞圈子，省下大家的時間。','Direct, honest, a little bold. Skips the runaround and saves everyone time.')},
+  {n:Z('資料腦','Data brain'),d:Z('習慣先用數字把事情跑一遍，從商業決策到遊戲的掉寶過濾器都一樣。','Runs the numbers first, on business decisions and on his game loot filter alike.')},
+  {n:Z('動手做','Builder'),d:Z('不只給建議，也把網站、系統和儀表板親手做出來。','Doesn’t stop at recommendations. Builds the websites, systems and dashboards too.')},
+  {n:Z('跨境適應','Border hopper'),d:Z('在台灣讀書工作、到奧地利交換、在越南接案。換個環境，就是開一張新地圖。','Studied and worked in Taiwan, exchanged in Austria, now working in Vietnam. A new place is a new map.')},
+];
+const HOBBIES=[
+  Z('像素 RPG：寶可夢、勇者鬥惡龍、歧路旅人、Undertale','Pixel RPGs: Pokémon, Dragon Quest, Octopath Traveler, Undertale'),
+  Z('Path of Exile（會自己調物品過濾器的那種玩家）','Path of Exile (the kind of player who tunes his own loot filter)'),
+  Z('動畫與世界觀設定','Anime and world-building'),
+  Z('打造療癒系奇幻世界的創作計畫','A cozy-fantasy creative world in progress'),
+  Z('Side project：App 概念、商業模式試算','Side projects: app concepts, business-model math'),
+];
+const SKILLS=[
+  {n:Z('數據分析','Data Analysis'),c:'#f2c14e',items:['A/B testing','SQL',Z('統計','Statistics'),Z('迴歸','Regression'),Z('問題框定','Problem framing'),Z('資料說故事','Storytelling')]},
+  {n:Z('資料視覺化','Data Visualization'),c:'#3fb6a8',items:['Tableau']},
+  {n:Z('數據工具','Data Stack'),c:'#6fa8dc',items:['Adobe Analytics','GA4','ETL','Teradata','Azure Databricks']},
+  {n:Z('程式','Programming'),c:'#e76f7a',items:['Python','PySpark','R']},
+  {n:Z('機器學習','Machine Learning'),c:'#b07cf0',items:[Z('邏輯迴歸','Logistic regression'),Z('樹模型','Tree-based models'),'K-means','PCA',Z('啟發式演算法','Heuristic algorithms')]},
+  {n:Z('產品打造','Product Building'),c:'#f4a259',items:[Z('AI 輔助開發','AI-assisted development'),Z('品牌網站','Brand websites'),Z('訂房與管理系統','Booking & management systems'),Z('分析儀表板','Analytics dashboards')]},
+];
+const EXP=[
+  {role:Z('自由接案・獨立專案','Independent Projects & Freelance'),org:Z('胡志明市，越南','Ho Chi Minh City, Vietnam'),time:'Nov 2025 – Sep 2026',
+   lead:Z('與台灣人經營的旅行社合作，同時負責客戶端與技術端工作','Partnering with a Taiwanese-owned travel agency across customer-facing and technical work'),
+   pts:[Z('以 AI 輔助開發，從概念到上線，一手打造旅行社品牌官網。',"Designed and built the agency's brand website end-to-end, using AI-assisted development to take it from concept to launch."),
+     Z('為 KTV 開發全端訂房與管理系統，內建分析儀表板與給投資人的營運報告。','Developed a full-stack room-booking and management system for a KTV venue, with built-in analytics dashboards and investor-facing performance reports.'),
+     Z('在胡志明市擔任導遊，負責帶團與每日行程調度。','Worked as a tour guide in Ho Chi Minh City, managing groups and day-to-day logistics.')]},
+  {role:Z('進階數據分析師','Advanced Data Analyst'),org:Z('遠傳電信 Far EasTone','Far EasTone Telecommunications'),time:'Sep 2022 – Mar 2025',
+   lead:Z('策略與行銷分析・CRM・SQL・Tableau・A/B 測試・Python・ETL','Strategy & marketing analysis · CRM · SQL · Tableau · A/B testing · Python · ETL'),
+   pts:[Z('eStore 智慧型手機：部署購買傾向模型鎖定高意圖用戶、再行銷猶豫的買家，營收從 6 倍成長到 170 倍。','eStore smartphones: grew smartphone revenue from 6× to 170× by deploying a purchase-propensity model to target high-intent users and retargeting hesitant buyers.'),
+     Z('friDay 購物轉虧小組：營運健檢找出負毛利根因、訂定復甦 KPI，用母公司自有媒體導流，並設計紅利點數 CRM 活動。','friDay Shopping turnaround squad: ran an operational health check to expose the root causes of negative margin, set recovery KPIs, drove traffic through parent-company owned media, and designed reward-point CRM campaigns.'),
+     Z('流失預防：從事件資料找出高風險用戶，用 A/B 測試找出最有效的挽留方案，一年內留住 3,000+ 位用戶。','Churn prevention: prevented churn for 3,000+ users in a single year by flagging at-risk users from event data and A/B testing retention treatments.'),
+     Z('每兩週向 C-level 報告電商成長策略：毛利成長 KPI、自有媒體成效、CRM 活動設計。','Reported bi-weekly to C-level stakeholders on e-commerce growth strategy: margin-growth KPIs, owned-media performance and CRM campaign design.'),
+     Z('建置從前處理到視覺化的 ETL 管線：追蹤活動成效、監控多來源流量、產出行銷名單。','Built ETL pipelines from pre-processing to visualization to measure campaigns, monitor multi-source traffic and generate target lists.'),
+     Z('以繳款傾向模型優化催收的人工與自動化資源配置；另建置家庭成員辨識與網路體驗模型。','Applied a payoff-propensity model to optimize human-vs-automated resource allocation for bill collection; also built family-member recognition and network-experience models.')]},
+  {role:Z('顧問','Consultant'),org:Z('勤業眾信 Deloitte・風險諮詢','Deloitte · Risk Advisory'),time:'Apr 2020 – Apr 2022',
+   lead:Z('Python・R・SQL・Tableau・Linux・IT 諮詢與確信・ERP 系統','Python · R · SQL · Tableau · Linux · IT Advisory & Assurance · ERP systems'),
+   pts:[Z('提供風險洞察，優化查核規劃與團隊資源配置。','Delivered risk insights that optimized audit planning and resource allocation for audit teams.'),
+     Z('把分析轉化為利害關係人能執行的建議。','Turned analysis into actionable recommendations for stakeholders.'),
+     Z('督導 5 個以上 IT 部門完成 IPO 內控準備。','Supervised 5+ IT departments on internal-control readiness for IPO.')]},
+];
+const NTUST=Z('國立臺灣科技大學','National Taiwan University of Science and Technology');
+const EDU=[
+  {role:Z('碩士・工業管理','Master · Industrial Management'),org:NTUST,time:'2016 – 2019',
+   pts:[Z('論文：《NSGA-II 序列式分群分類與逐步降維機制》，一套不需事先了解資料的分群分類演算法，適用冷啟動問題與高維度商業資料。','Thesis: NSGA-II Sequential Clustering Classification with a Stepwise Dimensionality Reduction Mechanism, a clustering-and-classification algorithm that needs no prior knowledge of the data, built for cold-start problems and high-dimensional business data.'),
+     Z('產學合作：與遠傳電信進行用戶行為分析。','Industry–academia project: user-behavior analysis with Far EasTone.'),
+     Z('交換學生：上奧地利應用科技大學，全球行銷與業務（2018–2019）。','Exchange program: Global Sales and Marketing, University of Applied Sciences Upper Austria (2018–2019).')]},
+  {role:Z('學士・工業管理','Bachelor · Industrial Management'),org:NTUST,time:'2012 – 2016',
+   pts:[Z('統計：機率、分配、假設檢定、迴歸、抽樣','Statistics: probability, distributions, hypothesis testing, regression, sampling'),
+     Z('作業研究：線性規劃、敏感度分析、排隊理論、馬可夫鏈、賽局理論','Operations research: linear programming, sensitivity analysis, queueing theory, Markov chains, game theory'),
+     Z('資料探勘應用：用 C++ 從零實作類神經網路','Data mining: built artificial neural networks from scratch in C++'),
+     Z('數學：微積分、線性代數、工程經濟','Mathematics: calculus, linear algebra, engineering economics')]},
+];
+
+/* ================= maps ================= */
+const BUILDINGS=[
+  {id:'home',x:5,y:11,w:7,h:5,style:'house',door:8},
+  {id:'ntust',x:15,y:8,w:12,h:8,style:'campus',door:21},
+  {id:'deloitte',x:31,y:10,w:8,h:6,style:'office',door:35},
+  {id:'guild',x:43,y:10,w:9,h:6,style:'dojo',door:47},
+  {id:'fet',x:55,y:5,w:7,h:11,style:'tower',door:58},
+  {id:'travel',x:71,y:10,w:8,h:6,style:'colonial',door:75},
+  {id:'ktv',x:83,y:9,w:8,h:7,style:'ktv',door:87},
+];
+const ZONES=[
+  {x1:14,n:Z('起點・Jeff 的家',"Start · Jeff's House")},{x1:30,n:Z('台科大校園','NTUST Campus')},
+  {x1:42,n:Z('商辦街區','Business District')},{x1:54,n:Z('技能道館前','Skill Hall Plaza')},
+  {x1:64,n:Z('遠傳大樓','Far EasTone Tower')},{x1:68,n:Z('海峽大橋：台灣 → 越南','Strait Bridge · Taiwan → Vietnam')},
+  {x1:999,n:Z('胡志明市','Ho Chi Minh City')}];
+const INAME={home:Z('Jeff 的家',"Jeff's House"),ntust:Z('台科大・工業管理系','NTUST · Industrial Management'),
+  deloitte:Z('勤業眾信・風險諮詢','Deloitte · Risk Advisory'),guild:Z('技能道館','Skill Hall'),
+  fet:Z('遠傳電信・數據分析','Far EasTone · Data Analytics'),travel:Z('旅行社・胡志明市','Travel Agency · Saigon'),ktv:Z('KTV・胡志明市','KTV · Saigon')};
+
+function buildWorld(){
+  const W=100,H=32;
+  const g=[...Array(H)].map(()=>Array(W).fill('g'));
+  const res=[...Array(H)].map(()=>Array(W).fill(false));
+  const fill=(x,y,w,h,c,rv=true)=>{for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++){if(i<0||j<0||i>=W||j>=H)continue;g[j][i]=c;if(rv)res[j][i]=true;}};
+  const reserve=(x,y,w,h)=>{for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)if(i>=0&&j>=0&&i<W&&j<H)res[j][i]=true;};
+  fill(68,0,W-68,H,'S',false);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(x<2||x>=W-2||y<2||y>=H-2)g[y][x]=x>=68?'P':'T';
+  fill(64,0,4,H,'w');
+  fill(2,18,62,2,'p');fill(64,18,4,2,'b');fill(68,18,28,2,'r');
+  reserve(0,16,W,6);
+  for(const b of BUILDINGS){reserve(b.x-1,b.y-1,b.w+2,b.h+2);if(b.x<64)fill(b.door,16,1,2,'p');}
+  // pond + park
+  fill(5,23,7,4,'w');for(const [x,y] of [[5,23],[11,23],[5,26],[11,26]])g[y][x]='g';reserve(4,22,9,6);
+  fill(17,16,3,1,'f');fill(23,16,3,1,'f');
+  reserve(13,22,14,5);reserve(58,21,6,4);reserve(69,20,28,6);
+  for(const x of[13,29,41,53])g[17][x]='L';for(const x of[79,92])g[17][x]='L';
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    if(res[y][x])continue;const r=hash(x,y,7);
+    if(g[y][x]==='g'){if(r<.08)g[y][x]='T';else if(r<.13)g[y][x]='f';else if(r<.25)g[y][x]='G';}
+    else if(g[y][x]==='S'&&x>69){if(r<.06)g[y][x]='P';}
+  }
+  return g.map(r=>r.join(''));
+}
+
+const W_OBJ=[
+  {k:'sign',x:10,y:17,s:[nar('【Jeff 的家】興趣・性格・語言都在裡面。',"[Jeff's House] Hobbies, personality and languages inside.")]},
+  {k:'sign',x:6,y:20,s:[nar('← 過去　　　　未來 →\n這座小鎮照 Jeff 的人生排列。往東走，就是往前走。',"← Past          Future →\nThis town follows Jeff's life. Walking east means moving forward in time.")]},
+  {k:'sign',x:23,y:17,s:[nar('【國立臺灣科技大學 工業管理系】\n學士 2012–2016・碩士 2016–2019','[NTUST · Industrial Management]\nBachelor 2012–2016 · Master 2016–2019')]},
+  {k:'sign',x:37,y:17,s:[nar('【勤業眾信 Deloitte・風險諮詢】\n顧問 2020.04 – 2022.04','[Deloitte · Risk Advisory]\nConsultant, Apr 2020 – Apr 2022')]},
+  {k:'sign',x:49,y:17,s:[nar('【技能道館】\n來看看 Jeff 會哪些招式。','[Skill Hall]\nSee what moves Jeff has learned.')]},
+  {k:'sign',x:60,y:17,s:[nar('【遠傳電信 Far EasTone】\n進階數據分析師 2022.09 – 2025.03','[Far EasTone Telecommunications]\nAdvanced Data Analyst, Sep 2022 – Mar 2025')]},
+  {k:'sign',x:62,y:21,s:[nar('【海峽大橋】\n台灣 → 越南・胡志明市','[Strait Bridge]\nTaiwan → Ho Chi Minh City, Vietnam')]},
+  {k:'sign',x:70,y:17,s:[nar('Xin chào！歡迎來到胡志明市。\n2025.11 起，Jeff 在這裡接案。','Xin chào! Welcome to Ho Chi Minh City.\nJeff has been freelancing here since Nov 2025.')]},
+  {k:'sign',x:77,y:17,s:[nar('【旅行社】台灣人經營\n品牌官網・導遊帶團','[Travel Agency] Taiwanese-owned\nBrand website · Tour guiding')]},
+  {k:'sign',x:89,y:17,s:[nar('【KTV】\n訂房與管理系統・分析儀表板','[KTV]\nBooking & management system · Analytics dashboards')]},
+  {k:'bench',x:15,y:24,w:2,s:[nar('一張長椅。坐在這裡可以看到整條時間軸。','A bench. From here you can see the whole timeline.')]},
+  {k:'bench',x:22,y:24,w:2,s:[nar('長椅上有人留下一張紙條：「先定義問題，再找資料。」','Someone left a note on the bench: "Define the problem first. Then find the data."')]},
+  {k:'bike',x:72,y:21,c:'#e76f7a',s:[nar('胡志明市的機車大軍。在這裡過馬路，本身就是一項技能。','Saigon’s scooter army. Crossing the street here is a skill in itself.')]},
+  {k:'bike',x:73,y:21,c:'#3fb6a8',s:[nar('機車上貼著旅行社的貼紙。','A travel-agency sticker on the scooter.')]},
+  {k:'bike',x:74,y:21,c:'#f2c14e',s:[nar('這台的安全帽是粉紅色的。','This one has a pink helmet.')]},
+  {k:'cart',x:78,y:21,w:2,s:[nar('咖啡攤。煉乳沉在杯底，冰塊堆到滿。','A coffee cart. Condensed milk at the bottom, ice to the brim.')]},
+  {k:'stall',x:88,y:22,w:2,s:[nar('水果攤：芒果、火龍果、紅毛丹。','A fruit stall: mango, dragon fruit, rambutan.')]},
+  {k:'gate',x:96,y:18,h:2,s:'gate'},
+];
+const W_NPC=[
+  {id:'oldman',x:12,y:21,dir:'left',s:[say('oldman','別急著往東衝。每棟房子都進得去，裡面的東西大多能調查。',"Don't rush east. Every building has a door, and most things inside can be inspected."),
+    say('oldman',isTouch?'走累了就按住 B 跑步。':'走累了就按住 Shift 跑步。',isTouch?'Tired? Hold B to run.':'Tired? Hold Shift to run.')]},
+  {id:'fresh',x:21,y:21,dir:'down',wander:1,s:[say('fresh','聽說有個學長大學時用 C++ 從零寫類神經網路。現在我們 import 一行就好了……','I heard a senior once wrote a neural network from scratch in C++. We just import it in one line now...')]},
+  {id:'office',x:36,y:21,dir:'down',wander:1,s:[say('office','這條街上的人都在趕報告。對面的道館倒是很安靜。','Everyone on this street is chasing a deadline. The hall across the road is nice and quiet, though.')]},
+  {id:'disciple',x:47,y:21,dir:'down',s:[say('disciple','道館裡有六個卷軸，每個都是 Jeff 的一派招式。','There are six scrolls in the hall. Each one is a school of Jeff’s moves.'),say('disciple','師父會一次講完。他很有效率。','The master explains them all at once. He is efficient.')]},
+  {id:'fisher',x:62,y:23,dir:'right',s:[say('fisher','2025 年春天，他離開了遠傳。','In spring 2025 he left Far EasTone.'),say('fisher','同一年的 11 月，他過了這座橋，到胡志明市開始新的冒險。','That November he crossed this bridge and started a new adventure in Ho Chi Minh City.')]},
+  {id:'vendor',x:80,y:21,dir:'left',s:[say('vendor','Cà phê sữa đá！越南冰奶咖啡。胡志明市的下午，沒有這杯撐不下去。','Cà phê sữa đá! Vietnamese iced milk coffee. No one survives a Saigon afternoon without it.')]},
+  {id:'tourist',x:85,y:21,dir:'down',wander:1,s:[say('tourist','我們的導遊把整團人和一整天的行程都顧好了。我們只要負責吃。','Our guide handled the whole group and the whole day’s schedule. We only had to eat.')]},
+  {id:'keeper',x:94,y:21,dir:'down',s:'keeper'},
+];
+
+const INT={
+  home:{grid:["############","############","#..........#","#..........#","#..........#","#..........#","#..........#","#..........#","#####D######"],
+    theme:{wall:'#e9d8b8',stripe:'#dcc7a2',floor:'wood',fa:'#c89a64',fb:'#a97c4b'},
+    obj:[
+      {k:'window',x:5,y:1,w:2,moon:1,s:[nar('窗外是一顆好大的月亮。','A huge moon hangs outside the window.'),nar('Jeff 正在構築一個療癒系的奇幻世界：星空、暖黃色的咖啡館，還有一隻賽博柯基。','Jeff is building a cozy-fantasy world: starry skies, warm amber cafés, and a cyber corgi.'),say('corgi','……那隻柯基，該不會是我吧？','...wait. Is that corgi me?')]},
+      {k:'mirror',x:10,y:1,badge:'heart',s:[nar('鏡子裡的人看著你。','The person in the mirror looks back at you.'),panel('status'),badge('heart')]},
+      {k:'tv',x:1,y:2,w:2,s:[nar('電視上跑著一款像素 RPG。','A pixel RPG is running on the TV.'),nar('寶可夢、勇者鬥惡龍、歧路旅人、Undertale：Jeff 最喜歡的就是這種遊戲。','Pokémon, Dragon Quest, Octopath Traveler, Undertale. These are Jeff’s favorite kind of game.'),nar('所以這份履歷，也做成了一款遊戲。','So this résumé became one too.')]},
+      {k:'bookshelf',x:3,y:2,w:2,s:[nar('動畫、設定集、世界觀筆記。','Anime, art books, world-building notes.'),nar('他喜歡從零打造一個世界：地圖、角色、光線、氣氛，全部自己定。','He likes building worlds from zero: the map, the characters, the light, the mood.')]},
+      {k:'pc',x:8,y:2,w:2,screen:'#8a2b2b',s:[nar('螢幕上開著 Path of Exile。','Path of Exile is open on the screen.'),nar('他會自己改 NeverSink 物品過濾器，連掉寶的分級都要調到順眼。','He edits his own NeverSink loot filter, down to how each drop is tiered.'),nar('嗯。連玩遊戲都在做資料分類。','Yes. Even his gaming involves data classification.')]},
+      {k:'globe',x:1,y:5,s:[nar('【語言技能】','[Languages]'),nar('中文（母語）・English（工作語言）・台語・客語','Mandarin (native) · English (working language) · Taiwanese Hokkien · Hakka')]},
+      {k:'table',x:4,y:5,w:2,s:[nar('一本點子筆記本。','A notebook of ideas.'),nar('App 概念、商業模式試算、跨境電商分析……他習慣先用數字把點子跑一遍，再決定要不要做。','App concepts, business-model math, cross-border e-commerce numbers... He runs the numbers on an idea before deciding to build it.')]},
+      {k:'bed',x:10,y:5,h:2,s:[choice(null,Z('要睡一下嗎？','Take a nap?'),[Z('睡一下','Sleep'),Z('不用','No thanks')],[[ {fn:'sleep'}, nar('HP 全滿！進度已存檔。','HP fully restored! Progress saved.')],[]])]},
+      {k:'plant',x:1,y:7,s:[nar('一盆還活著的植物。值得嘉獎。','A houseplant, still alive. Impressive.')]},
+    ],npc:[]},
+  ntust:{grid:["################","################","#..............#","#..............#","#..............#","#..............#","#..............#","#..............#","#..............#","#######D########"],
+    theme:{wall:'#dfe6d6',stripe:'#cfd8c4',floor:'wood',fa:'#d6ad78',fb:'#b98d57'},
+    obj:[
+      {k:'poster',x:2,y:1,w:2,s:[nar('一張阿爾卑斯山的海報。','A poster of the Alps.'),nar('2018–2019 交換學生：上奧地利應用科技大學，全球行銷與業務。','2018–2019 exchange: Global Sales and Marketing at the University of Applied Sciences Upper Austria.')]},
+      {k:'blackboard',x:6,y:1,w:4,s:[nar('黑板寫滿了：假設檢定、迴歸、抽樣、線性規劃、排隊理論、馬可夫鏈、賽局……','The blackboard is full: hypothesis tests, regression, sampling, linear programming, queueing theory, Markov chains, game theory...'),nar('角落有人偷畫了一隻柯基。','Someone drew a corgi in the corner.')]},
+      {k:'diploma',x:12,y:1,w:2,s:[nar('【學士 2012–2016・碩士 2016–2019】\n國立臺灣科技大學 工業管理系','[Bachelor 2012–2016 · Master 2016–2019]\nNTUST, Industrial Management')]},
+      {k:'bookshelf',x:1,y:2,w:1,s:[nar('統計學、作業研究、微積分、線性代數、工程經濟。書背都翻到起毛了。','Statistics, operations research, calculus, linear algebra, engineering economics. The spines are worn soft.')]},
+      {k:'pc',x:14,y:2,w:1,screen:'#2f7d45',s:[nar('碩士論文：《NSGA-II 序列式分群分類與逐步降維機制》','Master’s thesis: NSGA-II Sequential Clustering Classification with a Stepwise Dimensionality Reduction Mechanism.'),nar('白話版：一套不用事先了解資料，就能自己分群、分類的演算法。','In plain words: an algorithm that clusters and classifies data without needing to know the data first.'),nar('特別適合冷啟動問題，和維度很高的商業資料。','Built for cold-start problems and high-dimensional business data.')]},
+      {k:'desk',x:2,y:5,w:2,s:[nar('課桌上刻著：「p < 0.05」。','Carved into the desk: "p < 0.05".')]},
+      {k:'desk',x:4,y:5,w:2,s:[nar('一份作業研究考卷。敏感度分析那題拿滿分。','An operations research exam. Full marks on the sensitivity analysis question.')]},
+      {k:'desk',x:10,y:5,w:2,s:[nar('筆記上畫著一張類神經網路圖，旁邊寫著「C++，不准用套件」。','A neural network diagram in the notes, with "C++, no libraries" written beside it.')]},
+      {k:'desk',x:12,y:5,w:2,s:[nar('空位。窗外有鳥叫聲。','An empty seat. Birds outside the window.')]},
+      {k:'plant',x:14,y:8,s:[nar('系辦的盆栽。比學生還資深。','The department plant. It has more seniority than the students.')]},
+    ],
+    npc:[
+      {id:'prof',x:7,y:3,dir:'down',badge:'scholar',s:[say('prof','喔，你是來打聽 Jeff 的吧？','Ah, you’re here to ask about Jeff?'),say('prof','他在這裡待了七年：2012–2016 學士、2016–2019 碩士，都是工業管理。','He spent seven years here: Bachelor 2012–2016, Master 2016–2019, both in Industrial Management.'),say('prof','統計、作業研究、微積分、線性代數、工程經濟……這些後來全變成他做分析的底子。','Statistics, operations research, calculus, linear algebra, engineering economics. All of it became the base of his analytics work.'),say('prof','拿去吧，這是你的。','Here, this is yours.'),badge('scholar')]},
+      {id:'senior',x:2,y:7,dir:'right',s:[say('senior','我們實驗室跟遠傳有產學合作，做用戶行為分析。','Our lab ran an industry–academia project with Far EasTone on user behavior.'),say('senior','Jeff 那時候就開始啃電信資料了。後來的事……往東走就知道。','Jeff was already digging into telecom data back then. What happened next... keep walking east.')]},
+      {id:'classmate',x:13,y:7,dir:'left',s:[say('classmate','資料探勘課要用 C++ 從零寫類神經網路。','Our data mining class made us write neural networks from scratch in C++.'),say('classmate','沒有套件，沒有框架，只有指標和眼淚。','No libraries, no frameworks. Just pointers and tears.')]},
+    ]},
+  deloitte:{grid:["##############","##############","#............#","#............#","#............#","#............#","#............#","#............#","######D#######"],
+    theme:{wall:'#d9dee6',stripe:'#c9d0db',floor:'carpet',fa:'#8e9bb0',fb:'#7f8ca2'},
+    obj:[
+      {k:'window',x:2,y:1,w:2,s:[nar('窗外是整排辦公大樓，燈都還亮著。','Office towers outside, every light still on.')]},
+      {k:'whiteboard',x:5,y:1,w:3,s:[nar('一張風險熱力圖。右上角那格紅色被圈了三次。','A risk heat map. The red cell in the top right has been circled three times.')]},
+      {k:'clock',x:11,y:1},
+      {k:'binders',x:10,y:2,w:3,s:[nar('一整排內控文件。標籤寫著：IPO 準備、IT 一般控制、ERP 系統。','A row of internal-control binders. Labels: IPO readiness, IT general controls, ERP systems.')]},
+      {k:'pc',x:2,y:5,w:2,screen:'#3fb6a8',s:[nar('工具列：Python、R、SQL、Tableau、Linux。','Toolbar: Python, R, SQL, Tableau, Linux.'),nar('畫面上是一份 ERP 系統的查核分析，重點都用顏色標好了。','An ERP audit analysis is on screen, key findings already color-coded.')]},
+      {k:'pc',x:9,y:5,w:2,screen:'#6fa8dc',s:[nar('隔壁座位的螢幕：一份還沒寫完的查核報告。','The next desk’s screen: an audit report, half written.')]},
+      {k:'plant',x:1,y:7,s:[nar('辦公室盆栽，被照顧得比報告還好。','The office plant. Better maintained than some reports.')]},
+      {k:'plant',x:12,y:7,s:[nar('另一盆。有人在花盆上貼了便利貼：「Q4 再澆」。','Another plant. A sticky note on the pot: "water in Q4".')]},
+    ],
+    npc:[
+      {id:'manager',x:6,y:3,dir:'down',badge:'audit',s:[say('manager','Jeff？他是我們風險諮詢的顧問，2020 年 4 月到 2022 年 4 月。','Jeff? He was a consultant on our risk advisory team, April 2020 to April 2022.'),say('manager','他用資料找出風險在哪，幫查核團隊把規劃和人力放在對的地方。','He used data to find where the risk was, so audit teams could put their planning and people in the right place.'),say('manager','還督導過 5 個以上的 IT 部門，準備 IPO 內控。','He also supervised 5+ IT departments preparing their internal controls for IPO.'),say('manager','顧問的基本功：把分析變成別人能執行的建議。這枚給你。','The core consulting skill: turning analysis into advice people can act on. This is for you.'),badge('audit')]},
+      {id:'coworker',x:4,y:6,dir:'right',s:[say('coworker','他講話很直接。一開始有點嚇人，後來發現省了大家很多時間。','He’s very direct. A bit scary at first, then you realize how much time it saves everyone.')]},
+    ]},
+  guild:{grid:["##############","##############","#............#","#............#","#............#","#............#","#............#","#............#","#######D######"],
+    theme:{wall:'#efe3c4',stripe:'#e0d0a8',floor:'tatami',fa:'#cdbf7e',fb:'#9c8c4a',beam:1},
+    obj:[
+      {k:'banner',x:3,y:1,c:'#8c2f2f',s:[nar('掛軸寫著：「先問對問題」。','The scroll reads: "Ask the right question first."')]},
+      {k:'banner',x:10,y:1,c:'#2f4858',s:[nar('掛軸寫著：「數字要能說故事」。','The scroll reads: "Numbers should tell a story."')]},
+      {k:'scroll',x:2,y:3,c:SKILLS[0].c,s:[nar('【數據分析】\nA/B 測試・SQL・統計・迴歸・問題框定・資料說故事','[Data Analysis]\nA/B testing · SQL · statistics · regression · problem framing · storytelling')]},
+      {k:'scroll',x:2,y:5,c:SKILLS[1].c,s:[nar('【資料視覺化】\nTableau：給 C-level 看的儀表板，一頁講完重點。','[Data Visualization]\nTableau: dashboards for C-level readers that make the point on one page.')]},
+      {k:'scroll',x:4,y:5,c:SKILLS[2].c,s:[nar('【數據工具】\nAdobe Analytics・GA4・ETL・Teradata・Azure Databricks','[Data Stack]\nAdobe Analytics · GA4 · ETL · Teradata · Azure Databricks')]},
+      {k:'scroll',x:9,y:5,c:SKILLS[3].c,s:[nar('【程式】\nPython・PySpark・R','[Programming]\nPython · PySpark · R')]},
+      {k:'scroll',x:11,y:5,c:SKILLS[4].c,s:[nar('【機器學習】\n邏輯迴歸・樹模型・K-means・PCA・啟發式演算法','[Machine Learning]\nLogistic regression · tree-based models · K-means · PCA · heuristic algorithms')]},
+      {k:'scroll',x:11,y:3,c:SKILLS[5].c,s:[nar('【產品打造】新招\n用 AI 輔助開發，把品牌網站、訂房系統和儀表板從零做到上線。','[Product Building] new move\nAI-assisted development: brand websites, booking systems and dashboards, from zero to launch.')]},
+    ],
+    npc:[
+      {id:'master',x:7,y:3,dir:'down',badge:'skill',s:[say('master','歡迎來到技能道館。','Welcome to the Skill Hall.'),say('master','Jeff 的招式分成六派，每座台座上的卷軸都能讀。','Jeff’s moves fall into six schools. Every scroll on the pedestals can be read.'),say('master','想一次看完的話，我這裡有整理好的版本。','If you’d rather see them all at once, here’s the summary.'),panel('skills'),say('master','最近他還練了新招：用 AI 輔助開發，把系統從零做到上線。這枚徽章，你收下。','Lately he’s picked up a new move: AI-assisted development, from zero to launch. Take this badge.'),badge('skill')]},
+    ]},
+  fet:{grid:["##################","##################","#................#","#................#","#................#","#................#","#................#","#................#","#................#","#................#","########D#########"],
+    theme:{wall:'#cfd8e6',stripe:'#bfcadb',floor:'tile',fa:'#e4e8ee',fb:'#cbd2dc'},
+    obj:[
+      {k:'window',x:2,y:1,w:2,s:[nar('從這層樓看得到整個城市的基地台。','From this floor you can see cell towers all over the city.')]},
+      {k:'screen',x:7,y:1,w:4,s:[nar('大螢幕：電商成長儀表板。毛利、流量、轉換率，一格一格亮著。','The big screen: an e-commerce growth dashboard. Margin, traffic, conversion, tile by tile.')]},
+      {k:'window',x:14,y:1,w:2,s:[nar('窗外下著雨。台北的雨。','Rain outside. Taipei rain.')]},
+      {k:'phone',x:2,y:4,s:[nar('eStore 智慧型手機專區。','The eStore smartphone section.'),nar('他部署了購買傾向模型，鎖定高意圖的用戶，再對猶豫的買家做再行銷。','He deployed a purchase-propensity model to target high-intent users, then retargeted the buyers who hesitated.'),panel('chart')]},
+      {k:'pc',x:4,y:6,w:2,screen:'#e76f7a',s:[nar('【friDay 購物・轉虧小組】','[friDay Shopping · turnaround squad]'),nar('先做營運健檢，找出負毛利的根本原因，訂出復甦 KPI。','First an operational health check to find the root causes of negative margin, then recovery KPIs.'),nar('再用母公司的自有媒體導流，設計紅利點數 CRM 活動，把營收拉起來。','Then traffic from the parent company’s owned media, and reward-point CRM campaigns to lift revenue.')]},
+      {k:'abboard',x:14,y:4,w:2,s:[nar('白板上是一組 A/B 測試結果。B 組明顯比較高。','An A/B test result on the whiteboard. Group B is clearly higher.'),nar('他從事件資料抓出高流失風險的用戶，再用 A/B 測試找出最有效的挽留方案。','He flagged at-risk users from event data, then A/B tested retention treatments to find what worked.'),nar('一年內，留住了 3,000+ 位用戶。','In one year: 3,000+ users kept from churning.')]},
+      {k:'pc',x:11,y:6,w:2,screen:'#f2c14e',s:[nar('桌上三份模型文件：','Three model documents on the desk:'),nar('① 繳款傾向模型：決定哪些催繳交給人工、哪些交給自動化。\n② 家庭成員辨識模型。③ 網路體驗模型。','1. Payoff propensity: which overdue bills go to people and which to automation.\n2. Family-member recognition. 3. Network experience.')]},
+      {k:'server',x:16,y:6,h:2,s:[nar('伺服器嗡嗡作響。','The servers hum.'),nar('他建的 ETL 管線：從前處理到視覺化，追蹤活動成效、監控多來源流量、產出行銷名單。','His ETL pipelines: pre-processing to visualization, measuring campaigns, monitoring multi-source traffic, generating target lists.')]},
+      {k:'plant',x:1,y:9,s:[nar('盆栽旁邊放著一張「本月 KPI」便條。','A "KPIs this month" note next to the plant.')]},
+      {k:'plant',x:16,y:9,s:[nar('這盆長得特別好。可能有人在做 A/B 測試。','This one is thriving. Someone may be A/B testing the watering.')]},
+    ],
+    npc:[
+      {id:'boss',x:8,y:3,dir:'down',badge:'signal',s:[say('boss','Jeff 在這裡當進階數據分析師，2022 年 9 月到 2025 年 3 月。','Jeff was an Advanced Data Analyst here, September 2022 to March 2025.'),say('boss','他每兩週跟我們高層報告電商成長策略：毛利成長 KPI、自有媒體成效、CRM 活動設計。','Every two weeks he briefed us on e-commerce growth: margin-growth KPIs, owned-media performance, CRM campaign design.'),say('boss','數字講得清楚，建議也敢講出口。這枚訊號徽章是你的。','Clear on the numbers, and willing to say what we should do. The Signal Badge is yours.'),badge('signal')]},
+      {id:'marketing',x:4,y:8,dir:'up',s:[say('marketing','行銷和產品團隊的名單都是他產的。','He generated the target lists for our marketing and product teams.'),say('marketing','我們說要找什麼樣的人，他就把名單和成效追蹤一起做好。','We described who we wanted to reach. He delivered the list and the performance tracking together.')]},
+      {id:'engineer',x:14,y:8,dir:'left',s:[say('engineer','Teradata、Azure Databricks、PySpark……這層樓的資料，他大概都摸過一輪。','Teradata, Azure Databricks, PySpark... he’s been through most of the data on this floor.')]},
+    ]},
+  travel:{grid:["##############","##############","#............#","#............#","#............#","#............#","#............#","#............#","######D#######"],
+    theme:{wall:'#f6dca0',stripe:'#eccb85',floor:'tile',fa:'#d9895b',fb:'#c47346'},
+    obj:[
+      {k:'mapwall',x:3,y:1,w:3,s:[nar('胡志明市地圖。第一郡、濱城市場、西貢河都用紅筆圈起來了。','A map of Ho Chi Minh City. District 1, Bến Thành Market and the Saigon River are circled in red.')]},
+      {k:'window',x:10,y:1,w:2,s:[nar('窗外一排機車呼嘯而過。','A wave of scooters roars past the window.')]},
+      {k:'pc',x:1,y:3,w:2,screen:'#2a9d8f',s:[nar('旅行社的品牌官網。','The agency’s brand website.'),nar('設計、內容、開發，從概念一路做到上線，全靠他一個人加上 AI 輔助開發。','Design, content and development, from concept to launch, by one person working with AI-assisted development.')]},
+      {k:'flag',x:11,y:3,s:[nar('導遊旗。','A tour guide’s flag.'),nar('他在胡志明市帶團：管好每一位團員，也管一整天的大小行程。','He guided groups around Ho Chi Minh City, managing the people and the whole day’s logistics.')]},
+      {k:'rack',x:12,y:6,s:[nar('行程 DM：古芝地道、湄公河三角洲、濱城市場夜遊。','Tour brochures: Củ Chi tunnels, the Mekong Delta, Bến Thành by night.')]},
+      {k:'plant',x:1,y:7,s:[nar('一盆熱帶植物。在這裡長得比在台灣快。','A tropical plant. It grows faster here than in Taiwan.')]},
+    ],
+    npc:[
+      {id:'owner',x:6,y:3,dir:'down',badge:'compass',s:[say('owner','我們是台灣人開的旅行社。','We’re a Taiwanese-owned travel agency.'),say('owner','Jeff 從 2025 年 11 月開始跟我們合作，技術和客人兩頭都顧。','Jeff has worked with us since November 2025, on both the technical side and the customer side.'),say('owner','他用 AI 輔助開發，把我們的品牌網站從概念做到上線，還幫忙帶團當導遊。','He built our brand website from concept to launch with AI-assisted development, and he guides tours too.'),say('owner','這枚羅盤徽章送你。','Take this Compass Badge.'),badge('compass')]},
+      {id:'customer',x:9,y:6,dir:'left',s:[say('customer','我是來問行程的。這家的網站寫得很清楚，一看就知道要怎麼報名。','I came to ask about tours. Their website is so clear, I knew exactly how to book.')]},
+    ]},
+  ktv:{grid:["##############","##############","#............#","#............#","#............#","#............#","#............#","#............#","#######D######"],
+    theme:{wall:'#2d1b45',stripe:'#3a2458',floor:'carpet',fa:'#40295e',fb:'#553878',stars:1},
+    obj:[
+      {k:'screen',x:5,y:1,w:4,s:[nar('儀表板：包廂使用率、尖峰時段、營收趨勢。','Dashboard: room occupancy, peak hours, revenue trend.'),nar('每個月給投資人的營運報告，都直接從這套系統產出。','The monthly investor performance report comes straight out of this system.')]},
+      {k:'counter',x:1,y:3,w:2,s:[nar('櫃檯上的訂房平板。','A booking tablet on the counter.'),nar('選包廂、選時段、確認。後台即時更新，前台不用再翻紙本。','Pick a room, pick a time, confirm. The back office updates instantly. No more paper logbook.')]},
+      {k:'mic',x:4,y:6,s:[choice(null,Z('要唱一首嗎？','Sing a song?'),[Z('唱！','Sing!'),Z('下次吧','Maybe later')],[[{fn:'sing'},nar('（你唱完了一首。柯基給了你 100 分。）','(You finish a song. The corgi gives you 100 points.)')],[nar('麥克風看起來有點失望。','The microphone looks a little disappointed.')]])]},
+      {k:'sofa',x:8,y:6,w:3,s:[nar('很軟的沙發。坐下去就不想起來了。','A very soft sofa. Once you sit, you stay.')]},
+      {k:'plant',x:12,y:7,s:[nar('一盆被霓虹燈照成紫色的植物。','A plant, dyed purple by the neon.')]},
+    ],
+    npc:[
+      {id:'ktvboss',x:7,y:3,dir:'down',badge:'mic',s:[say('ktvboss','歡迎光臨！這間 KTV 的訂房系統是 Jeff 做的。','Welcome! Jeff built this KTV’s booking system.'),say('ktvboss','全端開發：訂房、包廂管理，還內建分析儀表板。','Full stack: bookings, room management, and built-in analytics dashboards.'),say('ktvboss','給投資人的營運報告也是從系統直接出。徽章拿去，別忘了點歌。','The investor reports come straight from the system too. Here’s your badge. Don’t forget to sing.'),badge('mic')]},
+    ]},
+};
+
+/* ================= state ================= */
+const S={mode:'title',map:'world',badges:new Set(),visited:new Set(),seen:new Set(),intro:false,t0:0,music:true,zone:-1};
+try{if(localStorage.getItem('jq_music')==='0')S.music=false;}catch(e){}
+function save(){try{localStorage.setItem('jq_save',JSON.stringify({b:[...S.badges],i:S.intro,s:[...S.seen]}));}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('jq_save')||'null');if(d){(d.b||[]).forEach(b=>S.badges.add(b));(d.s||[]).forEach(b=>S.seen.add(b));S.intro=!!d.i;}}catch(e){}}
+const ent=(o)=>({x:o.x,y:o.y,fx:o.x,fy:o.y,t:0,moving:false,dir:o.dir||'down',step:0,dur:.16,...o});
+const P=ent({x:8,y:16,dir:'down'});
+const C=ent({x:9,y:17,dir:'left',kind:'corgi'});
+const MAPS={};
+
+function makeMap(id){
+  let M;
+  if(id==='world'){
+    const grid=buildWorld();
+    M={id,grid,w:grid[0].length,h:grid.length,buildings:BUILDINGS,objs:W_OBJ.map(o=>({w:1,h:1,...o})),npcs:W_NPC.map(n=>ent({...n,ox:n.x,oy:n.y,wt:1+Math.random()*2}))};
+  }else{
+    const d=INT[id];
+    M={id,grid:d.grid,w:d.grid[0].length,h:d.grid.length,theme:d.theme,buildings:[],objs:d.obj.map(o=>({w:1,h:1,...o})),npcs:d.npc.map(n=>ent({...n,ox:n.x,oy:n.y,wt:2}))};
+    for(let x=0;x<M.w;x++)if(M.grid[M.h-1][x]==='D')M.door={x,y:M.h-1};
+  }
+  M.solid=[...Array(M.h)].map(()=>Array(M.w).fill(false));
+  M.objAt=[...Array(M.h)].map(()=>Array(M.w).fill(null));
+  const SOL=id==='world'?'TwPL':'#';
+  for(let y=0;y<M.h;y++)for(let x=0;x<M.w;x++)if(SOL.includes(M.grid[y][x]))M.solid[y][x]=true;
+  for(const b of M.buildings)for(let y=b.y;y<b.y+b.h;y++)for(let x=b.x;x<b.x+b.w;x++)if(!(x===b.door&&y===b.y+b.h-1))M.solid[y][x]=true;
+  for(const o of M.objs)for(let y=o.y;y<o.y+o.h;y++)for(let x=o.x;x<o.x+o.w;x++){if(o.k!=='clock'){M.solid[y][x]=true;}M.objAt[y][x]=o;}
+  M.layer=buildLayer(M);
+  return M;
+}
+const cur=()=>MAPS[S.map];
+
+/* ================= tile & object art ================= */
+function groundAt(M,x,y){return M.id==='world'&&x>=68?'S':'g';}
+function tGrass(g,X,Y,x,y){R(g,X,Y,16,16,'#7cc36a');for(let i=0;i<3;i++){const h=hash(x,y,i+1);R(g,X+((h*14)|0),Y+((hash(x,y,i+9)*13)|0),2,1,'#63aa58');}
+  if(hash(x,y,5)<.3)R(g,X+((hash(x,y,6)*14)|0),Y+((hash(x,y,8)*14)|0),1,1,'#a5dc88');}
+function tile(g,M,x,y,ch){
+  const X=x*T,Y=y*T;const th=M.theme;
+  switch(ch){
+  case 'g':tGrass(g,X,Y,x,y);break;
+  case 'G':tGrass(g,X,Y,x,y);for(const [dx,dy] of [[2,4],[9,2],[5,10],[11,9]]){R(g,X+dx,Y+dy+2,1,3,'#4f9448');R(g,X+dx+2,Y+dy+2,1,3,'#4f9448');R(g,X+dx+1,Y+dy,1,5,'#3f8a42');R(g,X+dx+1,Y+dy,1,1,'#9bd67f');}break;
+  case 'f':tGrass(g,X,Y,x,y);{const cols=['#fbf3e4','#f2c14e','#e76f7a','#b8a4f0'];for(let i=0;i<3;i++){const fx=X+2+((hash(x,y,20+i)*11)|0),fy=Y+2+((hash(x,y,30+i)*11)|0),c=cols[(hash(x,y,40+i)*4)|0];R(g,fx,fy-1,1,1,c);R(g,fx-1,fy,3,1,c);R(g,fx,fy+1,1,1,c);R(g,fx,fy,1,1,'#f2c14e');}}break;
+  case 'p':R(g,X,Y,16,16,'#e3c58d');for(let i=0;i<3;i++)R(g,X+((hash(x,y,50+i)*14)|0),Y+((hash(x,y,60+i)*14)|0),2,1,'#c9a86f');
+    if(y>0&&!'pbrD'.includes(M.grid[y-1][x]))R(g,X,Y,16,1,'#c9a86f');if(y<M.h-1&&!'pbrD'.includes(M.grid[y+1][x]))R(g,X,Y+15,16,1,'#c9a86f');break;
+  case 'w':R(g,X,Y,16,16,'#3f86c6');R(g,X,Y+6,16,1,'#3677b3');R(g,X,Y+12,16,1,'#3677b3');
+    {const isW=(a,b)=>a<0||b<0||a>=M.w||b>=M.h||'wb'.includes(M.grid[b][a]);if(!isW(x,y-1))R(g,X,Y,16,2,'#bfe3f5');if(!isW(x,y+1))R(g,X,Y+14,16,2,'#2d6aa3');if(!isW(x-1,y))R(g,X,Y,2,16,'#bfe3f5');if(!isW(x+1,y))R(g,X+14,Y,2,16,'#bfe3f5');}break;
+  case 'b':R(g,X,Y,16,16,'#b98a55');for(let i=0;i<16;i+=4)R(g,X+i,Y,1,16,'#8a6238');
+    if(M.grid[y-1][x]!=='b'){R(g,X,Y,16,3,'#6b4a2f');R(g,X+2,Y-3,2,4,'#6b4a2f');}if(M.grid[y+1][x]!=='b'){R(g,X,Y+13,16,3,'#6b4a2f');}break;
+  case 'S':R(g,X,Y,16,16,'#dccaae');R(g,X,Y,16,1,'#c7b192');R(g,X,Y+8,16,1,'#c7b192');R(g,X+(y%2?4:12),Y,1,8,'#c7b192');R(g,X+(y%2?12:4),Y+8,1,8,'#c7b192');break;
+  case 'r':R(g,X,Y,16,16,'#5b5566');if(hash(x,y,3)<.3)R(g,X+((hash(x,y,4)*12)|0),Y+((hash(x,y,5)*12)|0),2,1,'#6a6476');
+    if(M.grid[y+1][x]==='r'&&x%2===0)R(g,X+3,Y+15,10,2,'#e9e2d0');if(M.grid[y-1][x]!=='r')R(g,X,Y,16,2,'#8f8a9a');if(M.grid[y+1][x]!=='r')R(g,X,Y+14,16,2,'#8f8a9a');break;
+  case 'T':tile(g,M,x,y,groundAt(M,x,y));
+    R(g,X+6,Y+11,4,5,'#6b4a2f');R(g,X+3,Y+1,10,11,'#2f7d45');R(g,X+1,Y+3,14,7,'#2f7d45');R(g,X+2,Y+11,12,1,'#1f5a32');R(g,X+1,Y+9,14,2,'#276b3b');
+    R(g,X+4,Y+3,5,3,'#4aa35a');R(g,X+5,Y+2,3,1,'#5fb86a');break;
+  case 'P':tile(g,M,x,y,'S');R(g,X+7,Y+5,3,11,'#8a6a44');R(g,X+8,Y+7,1,1,'#6b4f30');R(g,X+8,Y+11,1,1,'#6b4f30');
+    R(g,X+2,Y+3,12,3,'#3f9a4f');R(g,X+1,Y+5,4,3,'#2f7d45');R(g,X+11,Y+5,4,3,'#2f7d45');R(g,X+5,Y+1,6,3,'#4fb35e');R(g,X+7,Y+5,3,2,'#6b4a2f');break;
+  case 'L':tile(g,M,x,y,groundAt(M,x,y));R(g,X+7,Y+2,2,13,'#3a3a4a');R(g,X+5,Y+14,6,2,'#2e2e3a');R(g,X+5,Y,6,3,'#2e2e3a');R(g,X+6,Y+2,4,2,'#ffe08a');break;
+  case '#':{const below=y+1<M.h?M.grid[y+1][x]:'#';
+    if(below!=='#'&&below!==undefined){R(g,X,Y,16,16,th.wall);for(let i=2;i<16;i+=6)R(g,X+i,Y,2,13,th.stripe);R(g,X,Y,16,2,'#8a7a6a');R(g,X,Y+13,16,3,th.beam?'#6b4226':'#7a5a42');
+      if(th.stars&&hash(x,y,2)<.6){R(g,X+((hash(x,y,3)*12)|0)+2,Y+4+((hash(x,y,4)*6)|0),1,1,'#f2c14e');}
+      if(th.beam&&x%3===0)R(g,X+7,Y,2,13,'#6b4226');}
+    else R(g,X,Y,16,16,'#2a2438');}break;
+  case '.':case 'D':{
+    if(th.floor==='wood'){R(g,X,Y,16,16,th.fa);for(let i=0;i<16;i+=4){R(g,X,Y+i,16,1,th.fb);R(g,X+((hash(x,y+i,1)*12)|0)+2,Y+i,1,4,th.fb);}}
+    else if(th.floor==='tile'){R(g,X,Y,16,16,th.fa);R(g,X,Y,16,1,th.fb);R(g,X,Y,1,16,th.fb);R(g,X,Y+8,16,1,th.fb);R(g,X+8,Y,1,16,th.fb);}
+    else if(th.floor==='tatami'){R(g,X,Y,16,16,th.fa);R(g,X,Y,16,1,th.fb);R(g,X,Y,1,16,th.fb);if((x+y)%2)R(g,X+8,Y+1,1,15,'#bcae6c');else R(g,X+1,Y+8,15,1,'#bcae6c');}
+    else{R(g,X,Y,16,16,th.fa);for(let i=0;i<4;i++)R(g,X+((i*5+y*3)%14)+1,Y+((i*7+x*5)%14)+1,1,1,th.fb);}
+    if(ch==='D'){R(g,X+1,Y+2,14,12,'#8b3a3a');R(g,X+3,Y+4,10,1,'#b85454');R(g,X+3,Y+8,10,1,'#b85454');R(g,X,Y+14,16,2,'rgba(0,0,0,.35)');}
+  }break;
+  }
+}
+function drawDoor(g,x,y,col,glass){R(g,x+1,y,14,16,'#2a1d1a');if(glass){R(g,x+2,y+1,12,15,'#9cc9e3');R(g,x+7,y+1,2,15,'#5d6d82');R(g,x+3,y+2,2,6,'#e6f4fb');}
+  else{R(g,x+3,y+2,10,14,col);R(g,x+3,y+2,10,1,'rgba(255,255,255,.25)');R(g,x+10,y+9,2,2,'#f2c14e');}}
+function drawBuilding(g,b){
+  const X=b.x*T,Y=b.y*T,Wp=b.w*T,Hp=b.h*T,dx=b.door*T,dy=Y+Hp-16;
+  switch(b.style){
+  case 'house':{const rh=38;R(g,X+Wp-26,Y-4,8,12,'#7a5a4a');R(g,X+Wp-27,Y-5,10,2,'#5e4436');
+    R(g,X-2,Y+4,Wp+4,rh,'#b94a3c');for(let yy=Y+9;yy<Y+4+rh;yy+=6)R(g,X-2,yy,Wp+4,1,'#9c3b30');R(g,X-2,Y+4,Wp+4,2,'#d8674f');R(g,X-2,Y+rh+2,Wp+4,2,'#7e2f27');
+    const wy=Y+4+rh;R(g,X+2,wy,Wp-4,Hp-rh-4,'#efe0c2');R(g,X+2,Y+Hp-3,Wp-4,3,'#c9b18a');
+    for(const wx of[X+10,X+Wp-26]){R(g,wx,wy+8,16,12,'#8a6a4a');R(g,wx+2,wy+10,12,8,'#a8d8f0');R(g,wx+7,wy+10,2,8,'#8a6a4a');R(g,wx-1,wy+20,18,3,'#6b4a2f');R(g,wx+2,wy+19,2,1,'#e76f7a');R(g,wx+8,wy+19,2,1,'#f2c14e');R(g,wx+13,wy+19,2,1,'#e76f7a');}
+    drawDoor(g,dx,dy,'#6b4226');R(g,dx-1,dy-9,18,8,'#6b4a2f');ptext(g,'HOME',dx+1,dy-8,'#f4efe3');break;}
+  case 'campus':{R(g,X,Y+26,Wp,Hp-26,'#b0503a');for(let yy=Y+30;yy<Y+Hp-2;yy+=4)R(g,X,yy,Wp,1,'#95412f');
+    R(g,X-2,Y+14,Wp+4,14,'#4f5d7a');for(let yy=Y+18;yy<Y+26;yy+=3)R(g,X-2,yy,Wp+4,1,'#43506b');R(g,X-2,Y+14,Wp+4,2,'#6d7fa1');R(g,X-2,Y+26,Wp+4,3,'#e9e2d0');
+    const cx=X+Wp/2-14;R(g,cx,Y-2,28,30,'#b0503a');R(g,cx-2,Y-4,32,4,'#4f5d7a');R(g,cx+4,Y-8,20,4,'#4f5d7a');R(g,cx+7,Y+6,14,14,'#e9e2d0');R(g,cx+8,Y+7,12,12,'#fffaf0');R(g,cx+13,Y+9,2,5,'#1d1726');R(g,cx+13,Y+13,5,2,'#1d1726');
+    for(let i=0;i<7;i++){const wx=X+10+i*26;for(const wy of[Y+36,Y+66]){if(wy>Y+60&&Math.abs(wx+6-(dx+8))<26)continue;R(g,wx,wy,12,18,'#f4efe3');R(g,wx+2,wy+2,8,14,'#9cc9e3');R(g,wx+2,wy+8,8,1,'#f4efe3');R(g,wx+3,wy+3,2,4,'#d6ecf7');}}
+    R(g,dx-12,dy-30,40,6,'#e9e2d0');R(g,dx-10,dy-24,4,24,'#f4efe3');R(g,dx+22,dy-24,4,24,'#f4efe3');R(g,dx-8,dy-40,32,9,'#1e2a4a');ptext(g,'NTUST',dx+8-ptw('NTUST')/2,dy-38,'#f4efe3');
+    drawDoor(g,dx,dy,'#5b3a24');break;}
+  case 'office':{R(g,X+2,Y+4,Wp-4,Hp-4,'#7d8fa6');R(g,X,Y+2,Wp,6,'#5d6d82');
+    for(let r=0;r<3;r++)for(let c=0;c<6;c++){const wx=X+8+c*19,wy=Y+12+r*18;R(g,wx,wy,14,12,'#b8d8ec');R(g,wx,wy,14,2,'#e6f4fb');R(g,wx+10,wy+3,2,6,'#e6f4fb');}
+    R(g,X+2,Y+Hp-30,Wp-4,9,'#1f2a38');ptext(g,'DELOITTE',X+Wp/2-ptw('DELOITTE')/2,Y+Hp-28,'#f4efe3');R(g,X+2,Y+Hp-21,Wp-4,21,'#5d6d82');
+    for(let xx=X+6;xx<X+Wp-6;xx+=12)R(g,xx,Y+Hp-18,9,15,'#8fb4cc');drawDoor(g,dx,dy,null,true);break;}
+  case 'dojo':{R(g,X+6,Y+38,Wp-12,Hp-38,'#efe3c4');for(let xx=X+6;xx<X+Wp-6;xx+=12)R(g,xx,Y+38,2,Hp-38,'#6b4226');R(g,X+6,Y+60,Wp-12,2,'#6b4226');R(g,X+6,Y+76,Wp-12,2,'#6b4226');
+    for(const px of[X+4,X+Wp-10,dx-6,dx+16])R(g,px,Y+38,6,Hp-38,'#a83232');
+    R(g,X+24,Y+4,Wp-48,8,'#2f4858');R(g,X+12,Y+12,Wp-24,10,'#2f4858');R(g,X+2,Y+22,Wp-4,10,'#2f4858');for(let yy=Y+7;yy<Y+32;yy+=4)R(g,X+4,yy,Wp-8,1,'#3d5d70');
+    R(g,X+24,Y+4,Wp-48,8,'#2f4858');R(g,X-4,Y+32,Wp+8,6,'#243a47');R(g,X-7,Y+27,4,7,'#243a47');R(g,X+Wp+3,Y+27,4,7,'#243a47');
+    R(g,X+22,Y+1,Wp-44,4,'#d4a24c');R(g,X+18,Y-3,4,7,'#d4a24c');R(g,X+Wp-22,Y-3,4,7,'#d4a24c');
+    R(g,X+Wp/2-25,Y+42,50,11,'#d4a24c');R(g,X+Wp/2-24,Y+43,48,9,'#f2d58a');ptext(g,'SKILL HALL',X+Wp/2-ptw('SKILL HALL')/2,Y+45,'#3a1f10');
+    drawDoor(g,dx,dy,'#4a2c18');break;}
+  case 'tower':{const cx=X+Wp/2;R(g,cx-1,Y-6,2,28,'#9aa0b5');R(g,cx-4,Y+14,8,2,'#9aa0b5');
+    R(g,X+14,Y+22,Wp-28,22,'#2c4a6e');R(g,X+4,Y+44,Wp-8,Hp-44,'#2c4a6e');
+    for(let xx=X+8;xx<X+Wp-8;xx+=8)R(g,xx,Y+48,3,Hp-72,'#4d7aa8');for(let xx=X+18;xx<X+Wp-18;xx+=8)R(g,xx,Y+38,3,6,'#4d7aa8');
+    for(let yy=Y+52;yy<Y+Hp-24;yy+=10)R(g,X+4,yy,Wp-8,1,'#1f3552');R(g,X+4,Y+44,Wp-8,2,'#9cc9e3');
+    R(g,X+16,Y+26,Wp-32,9,'#f4efe3');ptext(g,'FET',cx-ptw('FET')/2,Y+28,'#2c4a6e');
+    R(g,X+4,Y+Hp-24,Wp-8,24,'#1f3552');for(let xx=X+8;xx<X+Wp-8;xx+=10)R(g,xx,Y+Hp-20,8,20,'#7fa8c9');drawDoor(g,dx,dy,null,true);break;}
+  case 'colonial':{R(g,X,Y+2,Wp,12,'#c0633a');for(let xx=X;xx<X+Wp;xx+=4)R(g,xx,Y+4,1,9,'#9c4a2a');R(g,X,Y+12,Wp,2,'#9c4a2a');
+    R(g,X+2,Y+14,Wp-4,Hp-14,'#f0c05a');R(g,X+2,Y+14,Wp-4,3,'#fff4d6');R(g,X+2,Y+46,Wp-4,3,'#fff4d6');
+    for(let c=0;c<4;c++){const wx=X+10+c*30;R(g,wx,Y+20,5,20,'#2f7d4a');R(g,wx+5,Y+20,10,20,'#5a3f2a');R(g,wx+15,Y+20,5,20,'#2f7d4a');R(g,wx+5,Y+20,10,3,'#f4efe3');}
+    R(g,X+4,Y+38,Wp-8,2,'#f4efe3');for(let xx=X+5;xx<X+Wp-5;xx+=4)R(g,xx,Y+40,1,5,'#f4efe3');
+    for(const wx of[X+8,X+Wp-30]){R(g,wx,Y+62,4,22,'#2f7d4a');R(g,wx+4,Y+62,14,22,'#5a3f2a');R(g,wx+18,Y+62,4,22,'#2f7d4a');}
+    R(g,dx-10,Y+51,36,9,'#2a9d8f');ptext(g,'TRAVEL',dx+8-ptw('TRAVEL')/2,Y+53,'#f4efe3');R(g,dx-1,dy-4,18,4,'#fff4d6');drawDoor(g,dx,dy,'#2f7d4a');break;}
+  case 'ktv':{R(g,X+2,Y+6,Wp-4,Hp-6,'#3b2458');R(g,X,Y+2,Wp,6,'#2a1840');R(g,X+16,Y+14,Wp-32,26,'#1d1030');
+    for(let c=0;c<4;c++){R(g,X+10+c*28,Y+50,16,12,'#c65b9a');R(g,X+10+c*28,Y+50,16,2,'#ff9ccc');}
+    for(let i=0;i<9;i++)R(g,X+4+((hash(i,b.x,1)*(Wp-8))|0),Y+8+((hash(i,b.y,2)*80)|0),1,1,'#f2c14e');
+    R(g,X+2,Y+Hp-26,Wp-4,3,'#ff5fa2');R(g,dx-2,dy-2,20,2,'#5ff2ff');R(g,dx+1,dy,14,16,'#2a1d1a');R(g,dx+2,dy+1,12,15,'#b07cf0');R(g,dx+7,dy+1,2,15,'#6a3fa0');break;}
+  }
+}
+function drawObj(g,o){
+  const X=o.x*T,Y=o.y*T,W=o.w*T;
+  switch(o.k){
+  case 'sign':R(g,X+7,Y+9,2,7,'#6b4a2f');R(g,X+1,Y+2,14,9,'#6b4a2f');R(g,X+2,Y+3,12,7,'#c4905e');R(g,X+4,Y+5,8,1,'#8a5f3b');R(g,X+4,Y+7,6,1,'#8a5f3b');break;
+  case 'bench':R(g,X+1,Y+3,W-2,2,'#8a5f3b');R(g,X+1,Y+7,W-2,4,'#a8764a');R(g,X+3,Y+11,2,4,'#5a3f2a');R(g,X+W-5,Y+11,2,4,'#5a3f2a');break;
+  case 'bike':R(g,X+1,Y+10,5,5,'#1d1726');R(g,X+10,Y+10,5,5,'#1d1726');R(g,X+2,Y+11,3,3,'#9aa0b5');R(g,X+11,Y+11,3,3,'#9aa0b5');R(g,X+4,Y+6,9,5,o.c);R(g,X+4,Y+5,6,2,'#2b2b38');R(g,X+12,Y+2,2,6,'#9aa0b5');R(g,X+11,Y+2,4,1,'#2b2b38');R(g,X+3,Y+1,5,4,o.c);R(g,X+4,Y+1,3,1,'#fbf3e4');break;
+  case 'cart':R(g,X+15,Y-6,2,12,'#6b4a2f');R(g,X+3,Y-8,26,4,'#e76f7a');for(let i=0;i<26;i+=6)R(g,X+3+i,Y-8,3,4,'#fbf3e4');R(g,X+2,Y+5,28,9,'#2a9d8f');R(g,X+1,Y+4,30,2,'#1f7a6f');
+    R(g,X+5,Y+14,4,2,'#1d1726');R(g,X+23,Y+14,4,2,'#1d1726');for(const cx of[6,12,18])R(g,X+cx,Y+1,4,4,'#c98b4a');break;
+  case 'stall':R(g,X+1,Y-6,2,20,'#6b4a2f');R(g,X+29,Y-6,2,20,'#6b4a2f');for(let i=0;i<32;i+=4)R(g,X+i,Y-8,4,5,(i/4)%2?'#fbf3e4':'#d62828');
+    R(g,X+1,Y+7,30,8,'#8a5f3b');R(g,X+1,Y+7,30,2,'#a8764a');const fr=['#f2c14e','#e76f7a','#d64f9c','#86c06c','#f2c14e','#e76f7a'];fr.forEach((c,i)=>R(g,X+3+i*5,Y+3,4,4,c));break;
+  case 'gate':R(g,X,Y-10,16,4,'#9aa0b5');R(g,X-1,Y-12,18,2,'#b8bdd0');R(g,X,Y-6,3,38,'#7d8196');R(g,X+13,Y-6,3,38,'#7d8196');R(g,X+3,Y-6,10,38,'#1d1030');break;
+  case 'window':R(g,X+2,Y+2,W-4,11,'#f4efe3');R(g,X+3,Y+3,W-6,9,o.moon?'#1d2352':'#a8d8f0');
+    if(o.moon){R(g,X+W-11,Y+4,5,5,'#ffe7a3');R(g,X+W-10,Y+4,3,1,'#fff6d0');for(const [a,b] of[[6,5],[10,9],[14,4],[8,10]])R(g,X+a,Y+b,1,1,'#f4efe3');}
+    else{R(g,X+4,Y+8,5,4,'#8fa3b8');R(g,X+10,Y+6,4,6,'#7d8fa6');R(g,X+15,Y+9,6,3,'#8fa3b8');}
+    R(g,X+W/2-1,Y+3,2,9,'#f4efe3');R(g,X+1,Y+13,W-2,2,'#b08b5b');break;
+  case 'mirror':R(g,X+4,Y+1,8,13,'#b08b5b');R(g,X+5,Y+2,6,11,'#dfeefb');R(g,X+6,Y+3,1,5,'#ffffff');R(g,X+8,Y+9,2,3,'#c3d6ea');break;
+  case 'tv':R(g,X+2,Y+7,28,8,'#6b4a2f');R(g,X+2,Y+7,28,2,'#8a5f3b');R(g,X+5,Y-4,22,12,'#1d1726');R(g,X+7,Y-2,18,8,'#7cc36a');R(g,X+7,Y+3,18,3,'#3f86c6');R(g,X+14,Y-1,3,4,'#e76f7a');R(g,X+19,Y,2,2,'#f2c14e');R(g,X+9,Y+10,10,3,'#d9d9e3');R(g,X+20,Y+10,6,3,'#4a4a5a');break;
+  case 'pc':{const m=X+W/2;R(g,X+1,Y+5,W-2,9,'#8a5f3b');R(g,X+1,Y+5,W-2,2,'#a8764a');R(g,X+2,Y+14,2,2,'#5a3f2a');R(g,X+W-4,Y+14,2,2,'#5a3f2a');
+    R(g,m-7,Y-6,14,11,'#2b2b38');R(g,m-6,Y-5,12,8,o.screen||'#6fd3c2');R(g,m-5,Y-4,5,1,'rgba(255,255,255,.5)');R(g,m-4,Y-1,8,1,'rgba(0,0,0,.25)');R(g,m-1,Y+5,2,1,'#2b2b38');R(g,m-5,Y+8,10,2,'#d9d9e3');break;}
+  case 'bookshelf':{R(g,X,Y-8,W,24,'#6b4226');R(g,X+1,Y-7,W-2,22,'#4a2c18');const cols=['#e76f7a','#3fb6a8','#f2c14e','#6fa8dc','#b07cf0','#86c06c','#f4a259'];
+    for(const ry of[Y-6,Y+1,Y+8]){for(let i=0;i+3<=W-3;i+=3){R(g,X+2+i,ry+((hash(i,ry,o.x)*2)|0),2,6-((hash(i,ry,o.x)*2)|0),cols[(hash(i,ry,o.y)*7)|0]);}R(g,X+1,ry+6,W-2,1,'#6b4226');}break;}
+  case 'bed':R(g,X+1,Y+1,14,30,'#6b4a2f');R(g,X+2,Y+9,12,21,'#3f6fb5');R(g,X+3,Y+2,10,6,'#f4efe3');R(g,X+2,Y+9,12,2,'#5b8bd0');R(g,X+2,Y+16,12,1,'#355f9c');break;
+  case 'table':R(g,X+1,Y+4,W-2,9,'#a8764a');R(g,X+1,Y+4,W-2,2,'#c4905e');R(g,X+2,Y+13,2,3,'#6b4a2f');R(g,X+W-4,Y+13,2,3,'#6b4a2f');R(g,X+9,Y+5,11,6,'#f4efe3');R(g,X+14,Y+5,1,6,'#c9c2b0');R(g,X+10,Y+7,3,1,'#8a8a9a');R(g,X+16,Y+7,3,1,'#8a8a9a');R(g,X+22,Y+5,1,5,'#e76f7a');break;
+  case 'globe':R(g,X+7,Y+10,2,5,'#6b4a2f');R(g,X+4,Y+14,8,2,'#6b4a2f');R(g,X+3,Y+1,10,10,'#3f86c6');R(g,X+2,Y+3,12,6,'#3f86c6');R(g,X+5,Y+3,4,3,'#6ab04c');R(g,X+9,Y+7,3,2,'#6ab04c');R(g,X+4,Y+2,2,2,'#8fc6ee');break;
+  case 'plant':R(g,X+4,Y+10,8,6,'#b5543c');R(g,X+3,Y+9,10,2,'#c96a4f');R(g,X+3,Y+2,10,8,'#3f9a4f');R(g,X+6,Y,4,4,'#4fb35e');R(g,X+2,Y+5,3,3,'#2f7d45');R(g,X+11,Y+4,3,3,'#2f7d45');R(g,X+5,Y+3,2,2,'#6fcf7a');break;
+  case 'blackboard':R(g,X+1,Y+1,W-2,13,'#6b4a2f');R(g,X+2,Y+2,W-4,11,'#2f5d46');for(let i=0;i<9;i++)R(g,X+5+((hash(i,1,o.x)*(W-14))|0),Y+4+((hash(i,2,o.x)*7)|0),3+((hash(i,3,1)*6)|0),1,'#dfe9e2');
+    ptext(g,'E>X',X+6,Y+4,'#dfe9e2');R(g,X+W-12,Y+8,4,3,'#e8913a');R(g,X+2,Y+13,W-4,1,'#d9d9e3');break;
+  case 'poster':R(g,X+3,Y+1,W-6,13,'#f4efe3');R(g,X+4,Y+2,W-8,10,'#8ecae6');R(g,X+6,Y+8,8,4,'#5b6c8f');R(g,X+8,Y+6,4,2,'#5b6c8f');R(g,X+9,Y+5,2,1,'#fbf3e4');R(g,X+14,Y+7,10,5,'#4f5d7a');R(g,X+17,Y+5,4,2,'#4f5d7a');R(g,X+18,Y+4,2,1,'#fbf3e4');R(g,X+4,Y+11,W-8,1,'#6ab04c');break;
+  case 'diploma':for(const ox of[3,18]){R(g,X+ox,Y+2,11,11,'#b08b5b');R(g,X+ox+1,Y+3,9,9,'#fdf6e3');R(g,X+ox+2,Y+5,7,1,'#8a8a9a');R(g,X+ox+2,Y+7,5,1,'#8a8a9a');R(g,X+ox+6,Y+9,2,2,'#d62828');}break;
+  case 'desk':R(g,X+1,Y+4,W-2,8,'#c4905e');R(g,X+1,Y+4,W-2,2,'#dcae78');R(g,X+2,Y+12,2,4,'#6b4a2f');R(g,X+W-4,Y+12,2,4,'#6b4a2f');R(g,X+6,Y+5,7,4,'#f4efe3');R(g,X+18,Y+5,6,4,'#6fa8dc');break;
+  case 'whiteboard':R(g,X+1,Y+1,W-2,12,'#9aa6b6');R(g,X+2,Y+2,W-4,10,'#eef2f6');{const hc=['#86c06c','#f2c14e','#e76f7a'];for(let r=0;r<3;r++)for(let c=0;c<3;c++)R(g,X+5+c*5,Y+3+r*3,4,2,hc[Math.min(2,((2-r)+c)>>1)]);}
+    R(g,X+26,Y+4,16,1,'#6b6f88');R(g,X+26,Y+7,12,1,'#6b6f88');R(g,X+18,Y+2,6,1,'#d62828');R(g,X+18,Y+5,6,1,'#d62828');R(g,X+18,Y+2,1,4,'#d62828');R(g,X+23,Y+2,1,4,'#d62828');break;
+  case 'clock':R(g,X+4,Y+3,8,8,'#1d1726');R(g,X+5,Y+4,6,6,'#f4efe3');R(g,X+7,Y+5,1,3,'#1d1726');R(g,X+7,Y+7,3,1,'#1d1726');break;
+  case 'binders':{R(g,X,Y-6,W,22,'#7a6a5a');R(g,X+1,Y-5,W-2,20,'#5a4c40');const bc=['#3d5a80','#e76f7a','#f2c14e','#2a9d8f','#86c06c'];
+    for(const ry of[Y-4,Y+5]){for(let i=0;i+3<=W-3;i+=3){R(g,X+2+i,ry,3,8,bc[(i/3+ry)%5]);R(g,X+3+i,ry+2,1,2,'#f4efe3');}R(g,X+1,ry+8,W-2,1,'#7a6a5a');}break;}
+  case 'screen':R(g,X+1,Y+1,W-2,13,'#3a3f6b');R(g,X+2,Y+2,W-4,11,'#15172b');for(let i=0;i<7;i++){const h=3+i+((hash(i,o.x,1)*3)|0);R(g,X+5+i*7,Y+12-h,4,h,i%2?'#3fb6a8':'#f2c14e');}
+    R(g,X+W-14,Y+4,9,1,'#e76f7a');R(g,X+W-14,Y+6,6,1,'#aeb0d4');break;
+  case 'phone':R(g,X+3,Y+7,10,9,'#c7ccd9');R(g,X+2,Y+6,12,2,'#eef0f6');R(g,X+5,Y-4,6,10,'#1d1726');R(g,X+6,Y-3,4,7,'#6fd3c2');R(g,X+6,Y-3,2,2,'#e6fbf7');R(g,X+12,Y-6,1,3,'#f2c14e');R(g,X+11,Y-5,3,1,'#f2c14e');break;
+  case 'abboard':R(g,X+4,Y+8,2,8,'#6b6f88');R(g,X+W-6,Y+8,2,8,'#6b6f88');R(g,X+2,Y-6,W-4,15,'#9aa6b6');R(g,X+3,Y-5,W-6,13,'#eef2f6');
+    R(g,X+7,Y+1,6,6,'#aeb0c4');R(g,X+18,Y-3,6,10,'#3fb6a8');ptext(g,'A',X+8,Y-4,'#6b6f88');ptext(g,'B',X+26,Y-4,'#2a9d8f');break;
+  case 'server':R(g,X+2,Y-4,12,36,'#2b2b38');for(let yy=Y-2;yy<Y+30;yy+=5){R(g,X+3,yy,10,4,'#3a3a4a');R(g,X+4,yy+1,1,1,'#6fe36f');R(g,X+6,yy+1,1,1,hash(yy,1,1)<.5?'#f2c14e':'#6fe36f');R(g,X+8,yy+2,4,1,'#1d1726');}break;
+  case 'scroll':R(g,X+3,Y+7,10,9,'#9aa0b5');R(g,X+2,Y+6,12,2,'#b8bdd0');R(g,X+4,Y+10,8,1,'#7d8196');R(g,X+4,Y+1,8,5,'#f4e3b5');R(g,X+3,Y,2,7,o.c);R(g,X+11,Y,2,7,o.c);R(g,X+6,Y+2,4,1,'#8a7a5a');R(g,X+6,Y+4,3,1,'#8a7a5a');break;
+  case 'banner':R(g,X+3,Y+1,10,1,'#d4a24c');R(g,X+4,Y+2,8,11,o.c);R(g,X+4,Y+13,3,2,o.c);R(g,X+9,Y+13,3,2,o.c);R(g,X+6,Y+4,4,1,'#f4efe3');R(g,X+6,Y+7,4,1,'#f4efe3');R(g,X+6,Y+10,4,1,'#f4efe3');break;
+  case 'flag':R(g,X+7,Y-6,2,22,'#6b4a2f');R(g,X+5,Y+14,6,2,'#6b4a2f');R(g,X+9,Y-6,7,6,'#f2c14e');R(g,X+9,Y,4,2,'#f2c14e');R(g,X+11,Y-4,2,2,'#d62828');break;
+  case 'rack':R(g,X+2,Y,12,16,'#8a5f3b');const rc=['#3fb6a8','#f2c14e','#e76f7a','#6fa8dc'];for(let i=0;i<4;i++){R(g,X+3,Y+1+i*4,10,3,rc[i]);R(g,X+4,Y+2+i*4,4,1,'#f4efe3');}break;
+  case 'mapwall':R(g,X+2,Y+2,W-4,11,'#6b4a2f');R(g,X+3,Y+3,W-6,9,'#f4e3b5');for(let i=0;i<W-8;i+=2)R(g,X+4+i,Y+6+((i/2)%3===0?1:0)+((i>20)?2:0),2,1,'#3f86c6');R(g,X+10,Y+5,2,2,'#d62828');R(g,X+22,Y+9,2,2,'#d62828');R(g,X+30,Y+4,2,2,'#d62828');break;
+  case 'counter':R(g,X,Y+3,W,13,'#5a3f78');R(g,X,Y+3,W,3,'#8f6bb8');R(g,X+12,Y-1,12,6,'#1d1726');R(g,X+13,Y,10,4,'#5ff2ff');R(g,X+14,Y+1,4,1,'#1d1030');break;
+  case 'sofa':R(g,X+1,Y+1,W-2,7,'#6a2f8f');R(g,X+1,Y+7,W-2,7,'#9a55c4');R(g,X+1,Y+7,W-2,1,'#b276de');R(g,X,Y+4,3,11,'#6a2f8f');R(g,X+W-3,Y+4,3,11,'#6a2f8f');R(g,X+16,Y+8,1,6,'#7b3fa0');R(g,X+32,Y+8,1,6,'#7b3fa0');break;
+  case 'mic':R(g,X+7,Y+3,2,12,'#9aa0b5');R(g,X+4,Y+14,8,2,'#6b6f88');R(g,X+6,Y-1,4,5,'#3a3a4a');R(g,X+7,Y,1,1,'#aeb0c4');break;
+  }
+}
+function buildLayer(M){
+  const c=document.createElement('canvas');c.width=M.w*T;c.height=M.h*T;const g=c.getContext('2d');
+  for(let y=0;y<M.h;y++)for(let x=0;x<M.w;x++)tile(g,M,x,y,M.grid[y][x]);
+  for(const b of M.buildings)drawBuilding(g,b);
+  const os=[...M.objs].sort((a,b)=>a.y-b.y);for(const o of os)drawObj(g,o);
+  return c;
+}
+
+/* ================= audio ================= */
+let AC=null,master=null;
+function audio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=.6;master.connect(AC.destination);}catch(e){AC=null;}}if(AC&&AC.state==='suspended')AC.resume();return AC;}
+function tone(f,d,type='square',v=.05,when=0){const a=audio();if(!a)return;const t=a.currentTime+when;const o=a.createOscillator(),gn=a.createGain();o.type=type;o.frequency.value=f;gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(gn);gn.connect(master);o.start(t);o.stop(t+d+.02);}
+const mf=m=>440*Math.pow(2,(m-69)/12);
+const sfx={blip:()=>tone(900+Math.random()*80,.03,'square',.018),sel:()=>tone(660,.05,'square',.04),ok:()=>{tone(660,.06,'square',.04);tone(990,.08,'square',.04,.06);},
+  bump:()=>tone(110,.08,'triangle',.08),door:()=>{tone(392,.07,'square',.035);tone(523,.09,'square',.035,.07);},
+  badge:()=>{[72,76,79,84,79,84].forEach((m,i)=>tone(mf(m),.14,'square',.05,i*.1));},
+  sing:()=>{[67,69,71,74,72,71,69,67,69,74,79].forEach((m,i)=>tone(mf(m),.16,'triangle',.07,i*.16));}};
+const E8=60/104/2;
+const CHD={F:[53,57,60],C:[48,52,55],Dm:[50,53,57],Bb:[46,50,53],Gm:[43,46,50],Am:[45,48,52],C7:[48,52,58]};
+const SEC={
+  I:{c:'F F',m:'R:6|R:6'},
+  A:{c:'F C Dm Bb F Gm C7 F',m:'C5:2 F5:2 A5:2|G5:4 F5:1 E5:1|F5:2 D5:2 A4:2|Bb4:4 D5:2|C5:2 F5:2 A5:2|Bb5:3 A5:1 G5:2|E5:2 G5:2 Bb5:2|A5:4 R:2'},
+  A2:{c:'F C Dm Bb Am Gm C7 F',m:'C5:2 F5:2 A5:2|G5:4 F5:1 E5:1|F5:2 A5:2 D6:2|D6:3 C6:1 Bb5:2|A5:2 C6:2 A5:2|G5:2 Bb5:2 D5:2|E5:3 F5:1 G5:2|F5:6'},
+  B:{c:'Dm Am Bb F Gm Dm Bb C',m:'D5:3 E5:1 F5:2|E5:4 C5:2|D5:2 F5:2 Bb5:2|A5:4 F5:2|G5:3 A5:1 Bb5:2|A5:2 F5:2 D5:2|F5:2 G5:2 A5:2|G5:4 R:2'},
+  C:{c:'Bb C Am Dm Gm C F C7',m:'F5:1 Bb5:1 D6:4|C6:2 Bb5:2 G5:2|A5:1 C6:1 E6:4|D6:2 C6:2 A5:2|Bb5:2 A5:2 G5:2|A5:2 G5:2 E5:2|F5:4 C5:2|E5:2 G5:2 Bb5:2'},
+  D:{c:'Bb F Gm Dm Bb F C7 F',m:'D5:4 F5:2|C5:4 A4:2|Bb4:2 D5:2 G5:2|F5:4 A4:2|D5:2 F5:2 Bb5:2|A5:3 G5:1 F5:2|G5:2 E5:2 C5:2|F5:6'},
+};
+const ORDER=['I','A','A2','B','A2','C','D','A','A2','B','C','A2'];
+function midi(n){const m=/^([A-G])(b|#)?(\d)$/.exec(n);return 12*(+m[3]+1)+{C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]+(m[2]==='b'?-1:m[2]==='#'?1:0);}
+function buildSong(){const ev=[];let pos=0;
+  for(const k of ORDER){const sc=SEC[k];const bars=sc.m.split('|'),chs=sc.c.split(' ');
+    bars.forEach((bar,bi)=>{let q=pos+bi*6;for(const tok of bar.trim().split(/\s+/)){const[n,d]=tok.split(':');if(n!=='R')ev.push({s:q,m:midi(n),d:+d,k:'m'});q+=+d;}
+      const c=CHD[chs[bi]];ev.push({s:pos+bi*6,m:c[0]-12,d:3,k:'b'});ev.push({s:pos+bi*6+3,m:c[0]-5,d:2.5,k:'b',v:.6});
+      [c[0],c[1],c[2],c[0]+12,c[2]].forEach((m,i)=>ev.push({s:pos+bi*6+1+i,m,d:2.4,k:'a'}));});
+    pos+=bars.length*6;}
+  ev.sort((x,y)=>x.s-y.s);return{ev,len:pos};}
+let SONG=null,mG=null,mStart=0,mIdx=0,mLoop=0,mTimer=null,PW=null;
+function pulseWave(a,duty){const n=24,re=new Float32Array(n),im=new Float32Array(n);for(let k=1;k<n;k++)re[k]=2/(k*Math.PI)*Math.sin(k*Math.PI*duty);return a.createPeriodicWave(re,im);}
+function mnote(e,t){const a=AC;const o=a.createOscillator(),gn=a.createGain();o.frequency.value=mf(e.m);const dur=e.d*E8;
+  if(e.k==='m'){o.setPeriodicWave(PW);gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(.045,t+.012);gn.gain.setTargetAtTime(.026,t+.05,.18);gn.gain.setTargetAtTime(0,t+dur*.88,.04);}
+  else if(e.k==='b'){o.type='triangle';gn.gain.setValueAtTime(.12*(e.v||1),t);gn.gain.exponentialRampToValueAtTime(.001,t+dur);}
+  else{o.type='triangle';gn.gain.setValueAtTime(.032,t);gn.gain.exponentialRampToValueAtTime(.001,t+dur);}
+  o.connect(gn);gn.connect(mG);o.start(t);o.stop(t+dur+.35);}
+function mSched(){if(!AC||!SONG||!mG)return;const ahead=AC.currentTime+.35;
+  for(let guard=0;guard<300;guard++){if(mIdx>=SONG.ev.length){mIdx=0;mLoop++;}const e=SONG.ev[mIdx];const t=mStart+(mLoop*SONG.len+e.s)*E8;if(t>ahead)break;if(t>AC.currentTime-.02)mnote(e,t);mIdx++;}}
+function setMusic(on,persist){
+  S.music=on;$('#bMusic').setAttribute('aria-pressed',on);
+  if(persist){try{localStorage.setItem('jq_music',on?'1':'0');}catch(e){}}
+  clearInterval(mTimer);mTimer=null;
+  if(mG){const g=mG;try{g.gain.setTargetAtTime(0,AC.currentTime,.05);}catch(e){}setTimeout(()=>g.disconnect(),500);mG=null;}
+  if(on){const a=audio();if(!a)return;if(!SONG)SONG=buildSong();if(!PW)PW=pulseWave(a,.25);
+    mG=a.createGain();mG.gain.value=.9;mG.connect(master);mStart=a.currentTime+.15;mIdx=0;mLoop=0;mSched();mTimer=setInterval(mSched,80);}
+}
+
+/* ================= UI: dialog / choice / panel / menu ================= */
+const dlg=$('#dialog'),dName=$('#dName'),dText=$('#dText'),dNext=$('#dNext'),dCh=$('#dChoices');
+let W8=null; // {full, finish, resolve}
+let CH=null; // {opts, sel, resolve}
+function showLine(n,t){
+  return new Promise(res=>{
+    dlg.hidden=false;dCh.innerHTML='';dName.textContent=n?tx(N[n]):'';
+    const full=tx(t);let i=0,iv=null;dNext.classList.remove('on');
+    const done=()=>{clearInterval(iv);dText.textContent=full;W8.full=true;dNext.classList.add('on');};
+    W8={full:false,finish:done,resolve:()=>{W8=null;res();}};
+    if(reduced){dText.textContent='';done();return;}
+    dText.textContent='';
+    iv=setInterval(()=>{i+=1;dText.textContent=full.slice(0,i);if(i%2===0&&full[i-1]!==' ')sfx.blip();if(i>=full.length)done();},24);
+  });
+}
+function showChoice(n,q,opts){
+  return new Promise(async res=>{
+    dlg.hidden=false;dName.textContent=n?tx(N[n]):'';dText.textContent=tx(q);dNext.classList.remove('on');
+    CH={opts,sel:0,resolve:i=>{CH=null;dCh.innerHTML='';sfx.ok();res(i);}};
+    renderChoices();
+  });
+}
+function renderChoices(){if(!CH)return;dCh.innerHTML='';CH.opts.forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='opt'+(i===CH.sel?' sel':'');b.textContent=tx(o);
+  b.onclick=e=>{e.stopPropagation();CH&&CH.resolve(i);};b.onpointerenter=()=>{if(CH){CH.sel=i;renderChoicesSel();}};dCh.appendChild(b);});}
+function renderChoicesSel(){[...dCh.children].forEach((b,i)=>b.classList.toggle('sel',CH&&i===CH.sel));}
+function hideDialog(){dlg.hidden=true;dText.textContent='';dName.textContent='';dCh.innerHTML='';}
+dlg.addEventListener('click',()=>{if(!CH)pressA();});
+
+let scriptBusy=false;
+async function run(steps){if(scriptBusy)return;scriptBusy=true;try{await runSteps(steps);}finally{hideDialog();scriptBusy=false;}}
+async function runSteps(steps){
+  for(const st of steps){
+    if(st.t)await showLine(st.n,st.t);
+    else if(st.badge)await giveBadge(st.badge);
+    else if(st.panel){hideDialog();await openPanel(st.panel);}
+    else if(st.choice){const i=await showChoice(st.n,st.q,st.choice);const br=st.then&&st.then[i];if(br&&br.length)await runSteps(br);}
+    else if(st.fn){await FN[st.fn]();}
+  }
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const FN={
+  sleep:async()=>{hideDialog();fade(true);sfx.door();await wait(700);save();fade(false);await wait(250);},
+  sing:async()=>{hideDialog();sfx.sing();await wait(1900);},
+};
+async function giveBadge(id){
+  if(S.badges.has(id))return;
+  S.badges.add(id);save();updateHUD(true);sfx.badge();
+  const b=BADGES.find(x=>x.id===id);
+  await showLine(null,Z(`★ 獲得了「${b.n.zh}」！（${S.badges.size}/7）`,`★ You got the ${b.n.en}! (${S.badges.size}/7)`));
+  if(S.badges.size===7)await showLine('corgi',Z('汪汪！7 枚徽章全部到手！最東邊的大門已經為你打開了。','Woof woof! All 7 badges! The gate in the far east is open for you.'));
+}
+
+/* ================= illustrations (pop-up cards) ================= */
+const IW=192,IH=108;
+const PT=(g,s,x,y,c,sc=1)=>ptext(g,s,x,y,c,sc);
+const PTC=(g,s,cx,y,c,sc=1)=>ptext(g,s,Math.round(cx-ptw(s,sc)/2),y,c,sc);
+function ibox(g,x,y,w,h,fill,edge){if(edge){R(g,x,y,w,h,edge);R(g,x+1,y+1,w-2,h-2,fill);}else R(g,x,y,w,h,fill);}
+function arrowR(g,x1,y,x2,c){R(g,x1,y,x2-x1-1,1,c);R(g,x2-2,y-1,1,3,c);R(g,x2-3,y-2,1,5,c);}
+function arrowD(g,x,y1,y2,c){R(g,x,y1,1,y2-y1-1,c);R(g,x-1,y2-2,3,1,c);R(g,x-2,y2-3,5,1,c);}
+function person(g,x,y,c){R(g,x+1,y,3,3,'#f2c49b');R(g,x+1,y,3,1,'#262033');R(g,x,y+3,5,3,c);R(g,x+1,y+6,1,1,'#2f3553');R(g,x+3,y+6,1,1,'#2f3553');}
+function disc(g,cx,cy,r,c){g.fillStyle=c;for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++)if(x*x+y*y<=r*r+r*.8)g.fillRect(cx+x,cy+y,1,1);}
+function ring(g,cx,cy,r,c,bg){disc(g,cx,cy,r,c);disc(g,cx,cy,r-2,bg);}
+function tick(g,x,y,c){R(g,x,y+2,1,1,c);R(g,x+1,y+3,1,1,c);R(g,x+2,y+2,1,1,c);R(g,x+3,y+1,1,1,c);R(g,x+4,y,1,1,c);}
+function pointer(g,x,y){R(g,x,y,1,8,'#1d1726');for(let i=1;i<5;i++)R(g,x+i,y+i,1,1,'#1d1726');R(g,x+1,y+5,3,1,'#1d1726');R(g,x+1,y+2,1,3,'#ffffff');R(g,x+2,y+3,1,2,'#ffffff');R(g,x+3,y+4,1,1,'#ffffff');}
+function line(g,x0,y0,x1,y1,c){const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0))||1;for(let i=0;i<=n;i++)R(g,Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n),1,1,c);}
+const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
+const lerp=(a,b,k)=>a+(b-a)*k;
+
+const ILL={
+rpg:{ey:'HOBBY · PIXEL RPG',ti:Z('像素 RPG','Pixel RPGs'),
+  cap:[Z('最愛：寶可夢、勇者鬥惡龍、歧路旅人、Undertale。','Favorites: Pokémon, Dragon Quest, Octopath Traveler, Undertale.'),Z('所以這份履歷，也做成了一款遊戲。','So this résumé became one too.')],
+  draw(g,t){R(g,0,0,IW,IH,'#7cc36a');for(let i=0;i<46;i++)R(g,(hash(i,1,3)*150)|0,(hash(i,2,3)*60)|0,2,1,'#63aa58');
+    R(g,150,0,42,62,'#3f86c6');R(g,150,0,2,62,'#bfe3f5');for(let i=0;i<5;i++){const ox=((t/70+i*13)%34)|0;R(g,154+ox,6+i*11,4,1,'#9fd0f0');}
+    R(g,0,62,150,12,'#e3c58d');R(g,0,62,150,1,'#c9a86f');R(g,150,62,42,12,'#b98a55');for(let x=150;x<192;x+=4)R(g,x,62,1,12,'#8a6238');R(g,0,74,IW,34,'#6fb35f');
+    R(g,14,16,46,20,'#b94a3c');R(g,14,16,46,2,'#d8674f');R(g,18,36,38,24,'#efe0c2');R(g,33,46,8,14,'#6b4226');R(g,22,41,7,6,'#a8d8f0');R(g,45,41,7,6,'#a8d8f0');
+    for(const[x,y]of[[74,18],[94,30],[118,12],[128,38],[2,44]]){R(g,x+5,y+10,3,5,'#6b4a2f');R(g,x+1,y,11,11,'#2f7d45');R(g,x+3,y+2,4,3,'#4aa35a');}
+    const f=Math.floor(t/200)%4;g.drawImage(SPR.jeff.right[f],84,52);g.drawImage(CORGI.right[f%2],64,57);
+    const b=Math.round(Math.sin(t/220)*1.5);R(g,114,60+b,12,8,'#6fa8dc');R(g,116,58+b,8,2,'#6fa8dc');R(g,117,62+b,2,2,'#1d1726');R(g,122,62+b,2,2,'#1d1726');R(g,116,59+b,2,1,'#cfe6fb');
+    ibox(g,4,80,112,24,'#15173a','#f4efe3');PT(g,'JEFF    LV 5+',10,85,'#f4efe3');PT(g,'HP 99/99   MP 42',10,94,'#f2c14e');
+    ibox(g,120,80,68,24,'#15173a','#f4efe3');PT(g,'TALK',134,85,'#f4efe3');PT(g,'ITEM',134,94,'#f4efe3');if(Math.floor(t/400)%2)PT(g,'>',126,85,'#f2c14e');}},
+loot:{ey:'HOBBY · PATH OF EXILE',ti:Z('自己調的物品過濾器','A loot filter, tuned by hand'),
+  cap:[Z('他會自己改 NeverSink 物品過濾器，連掉寶的分級都要調到順眼。','He edits his own NeverSink loot filter, down to how each drop is tiered.'),Z('嗯。連玩遊戲都在做資料分類。','Yes. Data classification, even at play.')],
+  draw(g,t){R(g,0,0,IW,IH,'#0d0d14');for(let i=0;i<30;i++)R(g,(hash(i,5,1)*IW)|0,(hash(i,6,1)*IH)|0,1,1,'#2a2a3a');
+    PT(g,'NEVERSINK FILTER - CUSTOM',8,6,'#8a8aa0');R(g,8,13,176,1,'#2a2a3a');
+    const rows=[['DIVINE ORB','T1','#1d1726','#ffcf4a','#ffffff'],['EXALTED ORB','T1','#ffcf4a','#3a1e00','#ffcf4a'],['DIAMOND RING','T3 BOSS','#f4efe3','#4a2280','#b07cf0'],['CHAOS ORB','T2','#f2c14e','#1e1e28','#8a8a9a'],['PORTAL SCROLL','HIDE','#4a4a5a',null,null]];
+    rows.forEach((r,i)=>{const y=20+i*16,w=ptw(r[0])+10;if(r[3])ibox(g,40,y,w,11,r[3],r[4]);PT(g,r[0],45,y+3,r[2]);if(!r[3])R(g,43,y+5,w-6,1,'#6a6a7a');PT(g,r[1],150,y+3,i<2?'#ffcf4a':i===2?'#b07cf0':'#8a8aa0');});
+    const a=(Math.sin(t/250)+1)/2;g.globalAlpha=.2+.4*a;R(g,21,0,4,22,'#ffcf4a');g.globalAlpha=1;disc(g,23,24,3,'#ffcf4a');disc(g,23,24,1,'#fff6c8');
+    if(Math.floor(t/450)%2)PT(g,'>',30,55,'#3fb6a8');PT(g,'EDITED',106,55,'#3fb6a8');}},
+moon:{ey:'HOBBY · WORLD-BUILDING',ti:Z('療癒系奇幻世界','A cozy-fantasy world'),
+  cap:[Z('正在構築中的奇幻世界：星空、暖黃色的咖啡館，還有一隻賽博柯基。','A world in progress: starry skies, warm amber cafés and a cyber corgi.'),Z('他喜歡從零打造一個世界，地圖、角色、光線、氣氛都自己定。','He likes building worlds from zero: the map, the characters, the light, the mood.')],
+  draw(g,t){['#10143a','#161b48','#1d2352','#262c62','#30366f'].forEach((c,i)=>R(g,0,i*15,IW,15,c));
+    for(let i=0;i<44;i++){const x=(hash(i,7,2)*IW)|0,y=(hash(i,8,2)*66)|0;const tw=(Math.sin(t/300+i*1.7)+1)/2;R(g,x,y,1,1,tw>.55?'#ffffff':'#7f86c0');if(tw>.93){R(g,x-1,y,3,1,'#ffffff');R(g,x,y-1,1,3,'#ffffff');}}
+    disc(g,148,30,17,'#ffe7a3');disc(g,142,24,3,'#f0d284');disc(g,154,36,4,'#f0d284');disc(g,152,21,2,'#f0d284');
+    for(let x=0;x<IW;x++){const h=72+Math.round(Math.sin(x/18)*5+Math.sin(x/7)*2);R(g,x,h,1,IH-h,'#161a3a');}
+    R(g,22,52,56,44,'#3b2a3a');R(g,18,46,64,7,'#5a2f3a');R(g,26,42,48,4,'#5a2f3a');R(g,62,32,6,10,'#3b2a3a');
+    const gl=.85+.15*Math.sin(t/500);g.globalAlpha=.16*gl;R(g,12,48,76,52,'#ffc56b');g.globalAlpha=gl;R(g,28,62,14,12,'#ffc56b');R(g,56,62,14,12,'#ffc56b');R(g,43,78,14,18,'#ffb04a');g.globalAlpha=1;
+    R(g,34,62,1,12,'#3b2a3a');R(g,62,62,1,12,'#3b2a3a');R(g,37,54,26,8,'#2a1d2a');PT(g,'CAFE',42,55,'#ffc56b');
+    R(g,0,96,IW,12,'#1a1f3a');R(g,104,70,2,26,'#2e2e3a');disc(g,105,69,2,'#ffe08a');g.globalAlpha=.15;disc(g,105,70,9,'#ffe08a');g.globalAlpha=1;
+    g.drawImage(CORGI.right[Math.floor(t/350)%2],118,82);R(g,128,91,2,1,'#5ff2ff');}},
+board:{ey:'NTUST · COURSEWORK',ti:Z('大學的黑板','The undergrad blackboard'),
+  cap:[Z('統計：機率、分配、假設檢定、迴歸、抽樣','Statistics: probability, distributions, hypothesis testing, regression, sampling'),Z('作業研究：線性規劃、敏感度分析、排隊理論、馬可夫鏈、賽局理論','Operations research: linear programming, sensitivity analysis, queueing theory, Markov chains, game theory'),Z('數學：微積分、線性代數、工程經濟','Mathematics: calculus, linear algebra, engineering economics')],
+  draw(g,t){R(g,0,0,IW,IH,'#6b4a2f');R(g,4,4,IW-8,IH-10,'#2f5d46');R(g,4,IH-6,IW-8,2,'#d9d9e3');
+    const lines=['H0: MU = MU0','Y = B0 + B1 X','MAX CX  S.T. AX < B','M/M/1  QUEUE','P = 0.03 < 0.05'];let n=Math.floor(t/22);
+    lines.forEach((l,i)=>{const k=Math.max(0,Math.min(l.length,n));n-=l.length+4;PT(g,l.slice(0,k),10,10+i*12,'#dfe9e2');});
+    for(let x=0;x<=64;x++){const u=(x-32)/11;const y=Math.round(88-34*Math.exp(-u*u));R(g,112+x,y,1,1,'#dfe9e2');if(x>50&&x%2===0)R(g,112+x,y+1,1,88-y,'#8fb9a2');}
+    R(g,110,88,70,1,'#dfe9e2');PT(g,'ALPHA',160,78,'#f2c14e');
+    g.globalAlpha=.9;g.drawImage(CORGI.right[0],168,8);g.globalAlpha=1;}},
+thesis:{ey:"MASTER'S THESIS · NTUST",ti:Z('NSGA-II 分群分類','NSGA-II clustering & classification'),
+  cap:[Z('論文：《NSGA-II 序列式分群分類與逐步降維機制》。','Thesis: NSGA-II Sequential Clustering Classification with a Stepwise Dimensionality Reduction Mechanism.'),Z('白話版：不用事先了解資料，演算法自己把資料分群、分類，同時逐步減少用不到的維度。','In plain words: the algorithm clusters and classifies data it knows nothing about, while stepping down dimensions it doesn’t need.'),Z('適合冷啟動問題，和維度很高的商業資料。','Built for cold-start problems and high-dimensional business data.')],
+  draw(g,t){R(g,0,0,IW,IH,'#15172b');ibox(g,6,6,88,96,'#1d2040','#3b3f7a');PT(g,'CLUSTERS',10,10,'#aeb0d4');ibox(g,100,6,86,96,'#1d2040','#3b3f7a');PT(g,'PARETO FRONT',104,10,'#aeb0d4');
+    const cen=[[28,44],[70,40],[48,82]],col=['#f2c14e','#3fb6a8','#e76f7a'];const k=ease(((t%6000)/6000-.1)/.45);
+    for(let i=0;i<42;i++){const c=i%3,sx=10+hash(i,1,4)*80,sy=20+hash(i,2,4)*78,tx_=cen[c][0]+(hash(i,3,4)-.5)*20,ty=cen[c][1]+(hash(i,4,4)-.5)*18;
+      R(g,Math.round(lerp(sx,tx_,k)),Math.round(lerp(sy,ty,k)),2,2,k>.7?col[c]:'#8a8fb8');}
+    R(g,108,20,1,76,'#6b6f98');R(g,108,95,72,1,'#6b6f98');PT(g,'F2',111,20,'#6b6f98');PT(g,'F1',172,88,'#6b6f98');
+    const fy=u=>88-58*Math.pow(1-u,2);
+    for(let i=0;i<18;i++){const u=hash(i,5,4),x=Math.round(114+u*63),y=Math.round(24+hash(i,6,4)*(fy(u)-30));R(g,x,y,2,2,'#5a5f8a');}
+    let px=null,py=null;const hi=Math.floor(t/220)%10;
+    for(let i=0;i<10;i++){const u=i/9,x=Math.round(114+u*63),y=Math.round(fy(u));if(px!==null)line(g,px+1,py+1,x+1,y+1,'#8a6f2a');px=x;py=y;}
+    for(let i=0;i<10;i++){const u=i/9,x=Math.round(114+u*63),y=Math.round(fy(u));if(i===hi)disc(g,x+1,y+1,2,'#fff2b8');else R(g,x,y,2,2,'#f2c14e');}}},
+alps:{ey:'EXCHANGE · 2018–2019',ti:Z('上奧地利交換','Exchange in Upper Austria'),
+  cap:[Z('上奧地利應用科技大學，全球行銷與業務。','University of Applied Sciences Upper Austria, Global Sales and Marketing.'),Z('2018–2019，碩士期間的交換計畫。','2018–2019, an exchange during his master’s.')],
+  draw(g,t){['#7fc0e0','#8ecae6','#a3d5ec','#b8e0f0'].forEach((c,i)=>R(g,0,i*14,IW,14,c));R(g,0,56,IW,30,'#b8e0f0');disc(g,28,20,7,'#fff2b8');
+    for(const[ox,oy,w]of[[20,14,26],[90,24,34],[150,10,22]]){const x=Math.round(((t/90+ox)%240))-30;R(g,x,oy,w,4,'#ffffff');R(g,x+4,oy-3,w-10,3,'#ffffff');}
+    const pk=[[26,34],[74,20],[120,32],[168,24]];
+    for(let x=0;x<IW;x++){let y=99;let pp=null;for(const p of pk){const v=p[1]+Math.abs(x-p[0])*.95;if(v<y){y=v;pp=p;}}y=Math.round(y);R(g,x,y,1,82-y,x%9<5?'#5b6c8f':'#566685');const sn=Math.min(82,pp[1]+9);if(y<sn)R(g,x,y,1,sn-y,'#fbf3e4');}
+    for(let x=0;x<IW;x++){const h=70+Math.round(Math.sin(x/13)*3);R(g,x,h,1,82-h,'#4f8f5a');}
+    R(g,0,79,IW,1,'#3a3a4a');const tx_=Math.round((t/28)%280)-60;R(g,tx_,71,16,8,'#d62828');R(g,tx_+12,68,3,3,'#3a3a4a');R(g,tx_+2,73,4,3,'#fbf3e4');for(const c of[1,2]){R(g,tx_-c*18,72,16,7,'#f4efe3');R(g,tx_-c*18+3,73,4,3,'#6fa8dc');R(g,tx_-c*18+9,73,4,3,'#6fa8dc');}
+    R(g,0,82,IW,26,'#3f86c6');for(let i=0;i<8;i++){const ox=((t/80+i*29)%IW)|0;R(g,ox,86+(i%4)*5,5,1,'#9fd0f0');}
+    ibox(g,114,90,74,14,'#f4efe3','#1d1726');PT(g,'UPPER AUSTRIA',119,95,'#1d1726');ibox(g,6,90,38,14,'#f4efe3','#1d1726');PT(g,'2018-19',10,95,'#d62828');}},
+risk:{ey:'DELOITTE · RISK ADVISORY',ti:Z('風險熱力圖','Risk heat map'),
+  cap:[Z('用資料找出風險集中在哪裡，幫查核團隊調整規劃與人力配置。','He used data to find where risk concentrated, helping audit teams plan and allocate their people.'),Z('再把分析轉成利害關係人能執行的建議。','Then turned the analysis into recommendations stakeholders could act on.'),Z('圖為示意，非實際資料。','Illustrative, not real data.')],
+  draw(g,t){R(g,0,0,IW,IH,'#eef2f6');R(g,0,0,IW,2,'#9aa6b6');R(g,0,IH-2,IW,2,'#9aa6b6');const pal=['#86c06c','#b8d06a','#f2c14e','#f4a259','#e76f7a'];
+    for(let i=0;i<5;i++)for(let j=0;j<5;j++)R(g,30+i*15,8+j*15,14,14,pal[Math.min(4,Math.floor((i+(4-j))/2))]);
+    PTC(g,'LIKELIHOOD',67,86,'#4a4e68');'IMPACT'.split('').forEach((ch,i)=>PT(g,ch,22,20+i*8,'#4a4e68'));arrowR(g,30,96,106,'#4a4e68');arrowD(g,16,70,8,'#eef2f6');
+    for(const[i,j]of[[0,3],[1,2],[2,3],[3,2],[1,4],[2,1]])disc(g,30+i*15+7,8+j*15+7,2,'#ffffff');
+    const r=6+Math.round((Math.sin(t/220)+1));disc(g,30+4*15+7,8+7,r,'#d62828');disc(g,30+4*15+7,8+7,r-1,'#e76f7a');disc(g,30+4*15+7,8+7,2,'#ffffff');
+    PT(g,'AUDIT HOURS',118,12,'#4a4e68');const k=ease((t%5000)/1400);
+    [['HIGH',58,'#e76f7a'],['MED',34,'#f2c14e'],['LOW',14,'#86c06c']].forEach(([l,w,c],i)=>{PT(g,l,118,30+i*18,'#4a4e68');R(g,138,28+i*18,Math.round(w*.8*k),9,c);});
+    arrowR(g,108,50,116,'#4a4e68');}},
+ipo:{ey:'DELOITTE · IPO READINESS',ti:Z('IPO 內控準備','IPO internal-control readiness'),
+  cap:[Z('督導 5 個以上 IT 部門，完成 IPO 前的內部控制準備。','Supervised 5+ IT departments on internal-control readiness before IPO.'),Z('範圍：IT 諮詢與確信、ERP 系統。','Scope: IT advisory & assurance, ERP systems.')],
+  draw(g,t){R(g,0,0,IW,IH,'#1d2040');PT(g,'IT CONTROLS CHECK',6,6,'#aeb0d4');const ph=t%7500;
+    for(let i=0;i<5;i++){const x=8+i*36,y=20;ibox(g,x,y,28,30,'#2b2f5a','#6b6f98');R(g,x+8,y+5,12,14,'#3a3f6b');for(let k=0;k<3;k++){R(g,x+9,y+7+k*4,10,2,'#15172b');R(g,x+10,y+7+k*4,1,1,'#6fe36f');}
+      PTC(g,i===4?'IT5+':'IT'+(i+1),x+14,y+22,'#f4efe3');if(ph>700+i*700){disc(g,x+26,y+1,4,'#86c06c');tick(g,x+24,y-1,'#ffffff');}}
+    const done=ph>700+5*700;for(let i=0;i<5;i++)arrowD(g,22+i*36,54,70,done?'#f2c14e':'#4a4e7a');R(g,22,62,145,1,done?'#f2c14e':'#4a4e7a');
+    ibox(g,58,74,86,20,done?'#f2c14e':'#2b2f5a',done?'#fff2b8':'#6b6f98');PTC(g,'IPO READY',101,82,done?'#1d1726':'#6b6f98');PT(g,'5+',8,78,'#f2c14e',3);PT(g,'DEPTS',8,97,'#aeb0d4');}},
+estore:{ey:'FAR EASTONE · ESTORE',ti:Z('eStore 智慧型手機','eStore smartphones'),
+  cap:[Z('部署購買傾向模型，鎖定高意圖用戶，再對猶豫的買家做再行銷。','A purchase-propensity model targeted high-intent users; hesitant buyers were retargeted.'),Z('智慧型手機營收從 6 倍成長到 170 倍。長條依實際比例繪製。','Smartphone revenue grew from 6× to 170×. Bars drawn to scale.')],
+  draw(g,t){R(g,0,0,IW,IH,'#15172b');ibox(g,12,8,42,90,'#1d1726','#6b6f98');R(g,15,14,36,76,'#eef2f6');R(g,23,20,20,28,'#2b2b38');R(g,25,22,16,24,'#6fd3c2');R(g,26,23,5,2,'#e6fbf7');
+    R(g,20,54,26,2,'#aeb0c4');R(g,20,58,18,2,'#aeb0c4');const pu=Math.floor(t/350)%2;ibox(g,20,68,26,12,pu?'#f2c14e':'#e0a21c','#1d1726');PTC(g,'BUY',33,72,'#1d1726');pointer(g,38,74+(pu?0:1));
+    PT(g,'SMARTPHONE REVENUE',66,10,'#aeb0d4');R(g,66,20,1,58,'#3b3f7a');
+    PT(g,'BEFORE',70,26,'#aeb0d4');R(g,70,34,Math.max(1,Math.round(100*6/170)),10,'#aeb0d4');PT(g,'6X',78,36,'#f4efe3');
+    const w=Math.round(100*ease(((t%7000)-300)/1600));PT(g,'AFTER',70,54,'#f2c14e');R(g,70,62,w,10,'#f2c14e');for(let x=70;x<70+w;x+=6)R(g,x+4,62,2,10,'#d9a531');if(w>=99)PT(g,'170X',173,64,'#f2c14e');
+    PT(g,'HIGH INTENT > RETARGET > BUY',66,90,'#3fb6a8');}},
+churn:{ey:'FAR EASTONE · CHURN',ti:Z('流失預防','Churn prevention'),
+  cap:[Z('從事件資料抓出高流失風險的用戶。','Flagged at-risk users from event data.'),Z('用 A/B 測試比較挽留方案，找出最有效的那一個。','A/B tested retention treatments to find the most effective one.'),Z('一年內留住 3,000+ 位用戶。圖中人像與長條為示意。','Kept 3,000+ users from churning in one year. Icons and bars are illustrative.')],
+  draw(g,t){R(g,0,0,IW,IH,'#15172b');PT(g,'EVENT DATA > AT RISK',6,6,'#aeb0d4');const ph=t%7000,scan=6+ph/1500*80;
+    for(let r=0;r<5;r++)for(let c=0;c<8;c++){const i=r*8+c,x=8+c*10,y=16+r*11,risk=hash(i,9,9)<.3;let col='#6b6f98';
+      if(risk&&scan>x){col='#e76f7a';if(ph>3000+i*40)col='#3fb6a8';}person(g,x,y,col);}
+    if(ph<1500){g.globalAlpha=.5;R(g,Math.round(scan),14,2,58,'#3fb6a8');g.globalAlpha=1;}
+    PT(g,'A/B TEST',104,6,'#aeb0d4');R(g,102,62,80,1,'#6b6f98');const k=ease((ph-1500)/1200);R(g,112,62-Math.round(18*k),18,Math.round(18*k),'#6b6f98');R(g,146,62-Math.round(38*k),18,Math.round(38*k),'#3fb6a8');
+    PTC(g,'A',121,65,'#aeb0d4');PTC(g,'B',155,65,'#3fb6a8');if(k>=1)PT(g,'WINNER: B',120,74,'#3fb6a8');
+    PT(g,'3000+',8,80,'#f2c14e',3);PT(g,'USERS KEPT',72,82,'#f4efe3');PT(g,'IN 1 YEAR',72,90,'#aeb0d4');}},
+etl:{ey:'FAR EASTONE · DATA PIPELINES',ti:Z('ETL 管線','ETL pipelines'),
+  cap:[Z('從前處理到視覺化，一條龍自己建。','Built end to end, from pre-processing to visualization.'),Z('用途：追蹤活動成效、監控多來源流量、產出給行銷與產品團隊的名單。','Used to measure campaigns, monitor multi-source traffic and generate target lists for marketing and product teams.')],
+  draw(g,t){R(g,0,0,IW,IH,'#15172b');PT(g,'PRE-PROCESS > MODEL > VISUALIZE',6,6,'#aeb0d4');
+    ['WEB','APP','CRM'].forEach((l,i)=>{const y=30+i*16;ibox(g,6,y,34,12,'#2b2f5a','#6fa8dc');PTC(g,l,23,y+4,'#f4efe3');arrowR(g,41,y+6,70,'#6b6f98');const q=41+((t/12+i*9)%26);R(g,Math.round(q),y+5,2,3,'#f2c14e');});
+    ibox(g,70,26,40,56,'#2b2f5a','#f2c14e');PTC(g,'ETL',90,31,'#f2c14e');const a=t/400;
+    for(let i=0;i<8;i++){const an=a+i*Math.PI/4;R(g,Math.round(90+Math.cos(an)*9)-1,Math.round(58+Math.sin(an)*9)-1,3,3,'#f2c14e');}disc(g,90,58,6,'#f2c14e');disc(g,90,58,3,'#2b2f5a');
+    [[36,'DASHBOARD'],[60,'TARGET LIST']].forEach(([y,l],i)=>{arrowR(g,111,y+8,136,'#6b6f98');const q=111+((t/12+i*13)%22);R(g,Math.round(q),y+7,2,3,'#3fb6a8');ibox(g,136,y,52,18,'#2b2f5a','#3fb6a8');PTC(g,l,162,y+3,'#f4efe3');
+      if(i===0)for(let b=0;b<6;b++)R(g,142+b*7,y+15-(2+b),4,2+b,'#3fb6a8');else for(let b=0;b<3;b++){R(g,142,y+10+b*2,30,1,'#aeb0d4');}});
+    PT(g,'CAMPAIGNS . TRAFFIC . TARGETS',6,96,'#6b6f98');}},
+models:{ey:'FAR EASTONE · MODELS',ti:Z('三個模型','Three models'),
+  cap:[Z('繳款傾向模型：決定哪些催繳交給人工、哪些交給自動化。','Payoff propensity: which overdue bills go to people and which to automation.'),Z('家庭成員辨識模型、網路體驗模型。','Family-member recognition and network-experience models.')],
+  draw(g,t){R(g,0,0,IW,IH,'#15172b');['PAYOFF','FAMILY','NETWORK'].forEach((l,i)=>{const x=6+i*62;ibox(g,x,6,56,96,'#1d2040','#3b3f7a');PTC(g,l,x+28,11,'#f2c14e');});
+    let x=6;R(g,x+21,24,14,9,'#fbf3e4');R(g,x+23,26,10,1,'#aeb0c4');R(g,x+23,29,6,1,'#aeb0c4');person(g,x+10,48,'#e9885f');R(g,x+38,48,9,8,'#9aa0b5');R(g,x+40,50,2,2,'#3fb6a8');R(g,x+44,50,2,2,'#3fb6a8');R(g,x+42,45,1,3,'#9aa0b5');R(g,x+39,56,7,3,'#6b6f98');
+    line(g,x+26,34,x+13,46,'#6b6f98');line(g,x+30,34,x+42,44,'#6b6f98');const sp=Math.round(18+6*Math.sin(t/600));R(g,x+6,70,sp,6,'#e9885f');R(g,x+6+sp,70,44-sp,6,'#3fb6a8');PT(g,'HUMAN',x+4,80,'#e9885f');PT(g,'AUTO',x+36,80,'#3fb6a8');
+    x=68;const hx=x+10,hy=40;for(let i=0;i<18;i++){R(g,hx+18-i,hy-12+Math.floor(i/1.5)*0+Math.round(i*0.66),1,1,'#f4efe3');R(g,hx+18+i,hy-12+Math.round(i*0.66),1,1,'#f4efe3');}
+    R(g,hx+2,hy,1,30,'#f4efe3');R(g,hx+34,hy,1,30,'#f4efe3');R(g,hx+2,hy+30,33,1,'#f4efe3');
+    const ps=[[hx+6,hy+10],[hx+14,hy+18],[hx+22,hy+10],[hx+28,hy+18]];const on=Math.floor(t/400)%4;
+    ps.forEach((p,i)=>{if(i)line(g,ps[i-1][0]+2,ps[i-1][1]+3,p[0]+2,p[1]+3,i<=on+1?'#f2c14e':'#3b3f7a');});ps.forEach((p,i)=>person(g,p[0],p[1],['#e76f7a','#3fb6a8','#f2c14e','#6fa8dc'][i]));PTC(g,'SAME HOME',x+28,82,'#aeb0d4');
+    x=130;R(g,x+27,26,2,40,'#9aa0b5');line(g,x+20,66,x+27,30,'#9aa0b5');line(g,x+36,66,x+29,30,'#9aa0b5');R(g,x+22,46,12,1,'#9aa0b5');disc(g,x+28,26,2,'#e76f7a');
+    for(let k=0;k<2;k++){const r=((t/120+k*8)%16)+4;g.globalAlpha=Math.max(0,1-r/20);for(let j=-2;j<=2;j++)for(const s of[-1,1])R(g,Math.round(x+28+s*r*Math.cos(j*.35)),Math.round(26+r*Math.sin(j*.35)),1,1,'#9fd0f0');g.globalAlpha=1;}
+    const lv=1+Math.floor(t/500)%4;for(let b=0;b<4;b++)R(g,x+14+b*8,80-(b+1)*3,5,(b+1)*3,b<lv?'#3fb6a8':'#3b3f7a');PTC(g,'QUALITY',x+28,86,'#aeb0d4');}},
+friday:{ey:'FAR EASTONE · FRIDAY SHOPPING',ti:Z('friDay 購物轉虧小組','friDay Shopping turnaround'),
+  cap:[Z('營運健檢：找出負毛利的根本原因。','Operational health check to expose the root causes of negative margin.'),Z('訂出復甦 KPI，用母公司自有媒體導流。','Set recovery KPIs and drove traffic through parent-company owned media.'),Z('設計紅利點數 CRM 活動，拉升營收。','Designed reward-point CRM campaigns to lift revenue.')],
+  draw(g,t){R(g,0,0,IW,IH,'#15172b');PT(g,'TURNAROUND PLAYBOOK',6,6,'#aeb0d4');const act=Math.floor(t/900)%4;
+    ['CHECK','KPI','TRAFFIC','CRM'].forEach((l,i)=>{const x=6+i*47,y=26-(i===act?2:0);ibox(g,x,y,38,44,'#1d2040',i===act?'#f2c14e':'#3b3f7a');PTC(g,l,x+19,78,i===act?'#f2c14e':'#aeb0d4');if(i<3)arrowR(g,x+39,48,x+47,'#6b6f98');
+      const cx=x+19,cy=y+22;
+      if(i===0){ring(g,cx-2,cy-2,8,'#f4efe3','#1d2040');line(g,cx+4,cy+4,cx+9,cy+9,'#f4efe3');R(g,cx-6,cy-3,8,1,'#e76f7a');}
+      if(i===1){disc(g,cx,cy,10,'#e76f7a');disc(g,cx,cy,7,'#f4efe3');disc(g,cx,cy,4,'#e76f7a');disc(g,cx,cy,1,'#f4efe3');}
+      if(i===2){for(let k=0;k<3;k++)arrowR(g,cx-10,cy-6+k*6,cx+10,'#3fb6a8');}
+      if(i===3){disc(g,cx,cy,10,'#f2c14e');disc(g,cx,cy,8,'#e0a21c');PTC(g,'P',cx+1,cy-2,'#fff2b8',1);}});
+    PT(g,'ROOT CAUSE . KPI . OWNED MEDIA . POINTS',6,94,'#6b6f98');}},
+dash:{ey:'FAR EASTONE · C-LEVEL',ti:Z('給高層的成長儀表板','Growth dashboard for the C-suite'),
+  cap:[Z('每兩週向 C-level 報告電商成長策略。','Bi-weekly e-commerce growth briefings to C-level stakeholders.'),Z('內容：毛利成長 KPI、自有媒體成效、CRM 活動設計。','Covering margin-growth KPIs, owned-media performance and CRM campaign design.'),Z('圖為示意。','Illustrative.')],
+  draw(g,t){R(g,0,0,IW,IH,'#0f1124');R(g,0,0,IW,11,'#1d2040');PT(g,'E-COMMERCE GROWTH',4,3,'#f4efe3');PT(g,'EVERY 2 WKS',144,3,'#f2c14e');const k=ease((t%7000)/1600);
+    ['MARGIN','OWNED MEDIA','CRM'].forEach((l,i)=>{const x=4+i*63;ibox(g,x,15,58,32,'#15172b','#3b3f7a');PT(g,l,x+4,19,'#aeb0d4');let px=null,py=null;const n=Math.round(11*k);
+      for(let j=0;j<=n;j++){const y=Math.round(42-j*1.2-hash(j,i,5)*6),x2=x+5+j*4.5|0;if(px!==null)line(g,px,py,x2,y,'#3fb6a8');px=x2;py=y;}if(px!==null)disc(g,px,py,1,'#f2c14e');});
+    ibox(g,4,51,184,53,'#15172b','#3b3f7a');for(let y=60;y<100;y+=10)R(g,6,y,180,1,'#1d2040');
+    for(let x=0;x<Math.round(176*k);x++){const y=Math.round(96-x*.22-Math.sin(x/9)*4-hash(x,1,7)*2);R(g,8+x,y,1,98-y,'#1f4a55');R(g,8+x,y,1,1,'#3fb6a8');}PT(g,'REVENUE TREND',8,55,'#aeb0d4');}},
+web:{ey:'SAIGON · TRAVEL AGENCY',ti:Z('旅行社品牌官網','Travel agency brand website'),
+  cap:[Z('設計、內容、開發，從概念一路做到上線。','Design, content and development, from concept to launch.'),Z('以 AI 輔助開發，端到端完成。','End-to-end, with AI-assisted development.'),Z('畫面為示意。','Screens are illustrative.')],
+  draw(g,t){R(g,0,0,IW,IH,'#2a1d3a');ibox(g,6,4,180,100,'#f4efe3','#1d1726');R(g,7,5,178,9,'#c9cfd8');disc(g,12,9,1,'#e76f7a');disc(g,17,9,1,'#f2c14e');disc(g,22,9,1,'#86c06c');R(g,30,7,110,5,'#ffffff');
+    R(g,8,15,176,44,'#8ecae6');R(g,8,15,176,10,'#7fc0e0');R(g,8,46,176,13,'#3f86c6');for(let i=0;i<6;i++){const ox=((t/70+i*31)%176)|0;R(g,8+ox,50+(i%3)*3,5,1,'#9fd0f0');}
+    for(const px of[150,166]){R(g,px,28,2,18,'#6b4a2f');R(g,px-5,26,12,3,'#2f7d45');}
+    const bx=8+Math.round((t/45)%190)-12;if(bx>8&&bx<170){R(g,bx,49,14,3,'#8a5f3b');R(g,bx+4,45,6,4,'#f4efe3');}
+    R(g,18,21,64,12,'#1d1726');PT(g,'EXPLORE SAIGON',22,25,'#ffffff');const ph=t%5000,hov=ph>1800&&ph<3200;ibox(g,20,35,50,10,hov?'#fff2b8':'#f2c14e','#1d1726');PT(g,'BOOK A TOUR',24,38,'#1d1726');
+    for(let i=0;i<3;i++)R(g,128+i*14,17,10,2,'#ffffff');
+    [['#e9885f'],['#86c06c'],['#b07cf0']].forEach(([c],i)=>{const x=12+i*58;ibox(g,x,62,52,38,'#ffffff','#c9cfd8');R(g,x+2,64,48,18,c);R(g,x+3,86,34,2,'#aeb0c4');R(g,x+3,90,24,2,'#aeb0c4');});
+    const k=ease(ph/1800);pointer(g,Math.round(lerp(150,50,k)),Math.round(lerp(92,40,k))+(ph>2600&&ph<2800?1:0));}},
+tour:{ey:'SAIGON · TOUR GUIDE',ti:Z('胡志明市導遊','Tour guide in Ho Chi Minh City'),
+  cap:[Z('帶團走訪胡志明市，管好每一位團員，也管一整天的大小行程。','Guided groups around Ho Chi Minh City, managing the people and the whole day’s logistics.'),Z('路線為示意。','Route is illustrative.')],
+  draw(g,t){R(g,0,0,IW,IH,'#e9dcc0');for(let i=0;i<14;i++)for(let j=0;j<8;j++){if(hash(i,j,4)<.55)R(g,4+i*11,4+j*13,9,10,hash(i,j,5)<.2?'#b9d8a6':'#dccba8');}
+    for(let y=0;y<IH;y++){const x=Math.round(154+Math.sin(y/14)*10);R(g,x,y,16,1,'#3f86c6');R(g,x+3,y,1,1,'#7fb8e2');}
+    const pts=[[16,96],[40,72],[74,34],[126,50],[150,64]];let tot=0;const segs=[];for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);segs.push(d);tot+=d;}
+    for(let i=1;i<pts.length;i++){const[a,b]=[pts[i-1],pts[i]];const n=Math.round(segs[i-1]/3);for(let k=0;k<n;k+=1)if(k%2===0)R(g,Math.round(lerp(a[0],b[0],k/n)),Math.round(lerp(a[1],b[1],k/n)),2,2,'#d62828');}
+    const at=d=>{d=Math.max(0,Math.min(tot,d));for(let i=0;i<segs.length;i++){if(d<=segs[i]){const k=d/segs[i];return[lerp(pts[i][0],pts[i+1][0],k),lerp(pts[i][1],pts[i+1][1],k)];}d-=segs[i];}return pts[pts.length-1];};
+    [[40,72,'DISTRICT 1'],[74,34,'BEN THANH'],[126,50,'SAIGON RIVER']].forEach(([x,y,l])=>{R(g,x-2,y-7,5,5,'#d62828');R(g,x-1,y-2,3,1,'#d62828');R(g,x,y-1,1,1,'#d62828');const w=ptw(l)+5;const lx=Math.min(x+5,IW-w-2);ibox(g,lx,y-12,w,9,'#f4efe3','#1d1726');PT(g,l,lx+3,y-10,'#1d1726');});
+    const d=((t/30)%(tot+40));const[fx,fy]=at(d).map(Math.round);for(let k=3;k>=1;k--){const[qx,qy]=at(d-k*7).map(Math.round);person(g,qx-2,qy-6,['#ff8fab','#90be6d','#6fa8dc'][k-1]);}
+    person(g,fx-2,fy-6,'#2a9d8f');R(g,fx+3,fy-14,1,10,'#6b4a2f');R(g,fx+4,fy-14,6,4,'#f2c14e');}},
+ktvdash:{ey:'SAIGON · KTV',ti:Z('KTV 營運儀表板','KTV operations dashboard'),
+  cap:[Z('全端訂房與管理系統，內建分析儀表板。','A full-stack booking and management system with built-in analytics dashboards.'),Z('給投資人的營運報告，直接從系統產出。','Investor-facing performance reports come straight out of the system.'),Z('圖為示意，非實際資料。','Illustrative, not real data.')],
+  draw(g,t){R(g,0,0,IW,IH,'#1d1030');PT(g,'ROOM OCCUPANCY',6,6,'#ff9ccc');const pal=['#2d1b45','#5a2a7a','#9a3f9c','#e0559a','#ffc56b'];const col=Math.floor(t/350)%8;
+    for(let r=0;r<6;r++){PT(g,'R'+(r+1),6,19+r*10,'#aeb0d4');for(let c=0;c<8;c++){const v=Math.max(0,Math.min(.999,.15+c*.11+hash(r,c,2)*.35-(c>6?.35:0)));R(g,20+c*12,17+r*10,11,9,pal[Math.floor(v*5)]);}}
+    g.globalAlpha=.35;R(g,20+col*12,16,11,61,'#ffffff');g.globalAlpha=1;PT(g,'6P',20,80,'#aeb0d4');PT(g,'9P',56,80,'#aeb0d4');PT(g,'12A',92,80,'#aeb0d4');
+    PT(g,'REVENUE',124,6,'#ff9ccc');for(let b=0;b<7;b++){const h=8+Math.round(hash(b,3,3)*10+b*2);R(g,124+b*9,40-h,6,h,b===6?'#ffc56b':'#b07cf0');}R(g,122,40,64,1,'#6b4f8f');
+    R(g,126,50,24,32,'#f4efe3');R(g,126,50,24,4,'#b07cf0');for(let k=0;k<4;k++)R(g,129,58+k*4,16-(k%2)*5,1,'#8a8a9a');R(g,129,74,3,5,'#e0559a');R(g,134,72,3,7,'#e0559a');R(g,139,70,3,9,'#e0559a');
+    PT(g,'INVESTOR',154,58,'#f4efe3');PT(g,'REPORT',154,66,'#f4efe3');}},
+booking:{ey:'SAIGON · KTV',ti:Z('KTV 訂房系統','KTV booking system'),
+  cap:[Z('全端開發：訂房、包廂管理。','Full stack: bookings and room management.'),Z('前台訂好，後台同步更新。','Booked at the front desk, updated in the back office.'),Z('畫面為示意。','Screens are illustrative.')],
+  draw(g,t){R(g,0,0,IW,IH,'#2a1840');R(g,16,3,160,102,'#1d1726');R(g,20,7,152,94,'#f4efe3');R(g,20,7,152,11,'#5a3f78');PT(g,'BOOK A ROOM',24,10,'#ffffff');disc(g,164,12,2,Math.floor(t/400)%2?'#6fe36f':'#2f7d45');
+    const ph=t%5600;['7PM','8PM','9PM','10PM'].forEach((l,i)=>{ibox(g,24+i*28,22,24,9,i===2?'#f2c14e':'#ffffff','#aeb0c4');PTC(g,l,36+i*28,24,'#1d1726');});
+    const booked=[1,3,4];const sel=ph>1500;
+    for(let i=0;i<8;i++){const r=Math.floor(i/4),c=i%4,x=24+c*30,y=35+r*22;const st=booked.includes(i)?'b':(i===6&&sel)?'s':'f';
+      ibox(g,x,y,26,18,st==='b'?'#d6d0e0':st==='s'?'#f2c14e':'#bfeee8',st==='s'?'#e0a21c':'#aeb0c4');PTC(g,'R'+(i+1),x+13,y+3,st==='b'?'#8a8a9a':'#1d1726');if(st==='b'){R(g,x+8,y+11,10,1,'#8a8a9a');}else R(g,x+10,y+11,6,2,st==='s'?'#1d1726':'#3fb6a8');}
+    ibox(g,146,35,22,40,'#ffffff','#aeb0c4');PT(g,'LOG',151,38,'#5a3f78');const ln=ph>3300?4:3;for(let k=0;k<ln;k++)R(g,149,46+k*6,15,2,k===3?'#3fb6a8':'#c9c2d6');
+    const conf=ph>3000;ibox(g,114,82,54,13,conf?'#e0a21c':'#f2c14e','#1d1726');PTC(g,conf?'SYNCED':'CONFIRM',141,86,'#1d1726');if(conf)tick(g,120,85,'#1d1726');
+    let px,py;if(ph<1500){const k=ease(ph/1400);px=lerp(90,98,k);py=lerp(96,66,k);}else if(ph<3000){const k=ease((ph-1500)/1300);px=lerp(98,150,k);py=lerp(66,90,k);}else{px=150;py=90;}
+    pointer(g,Math.round(px),Math.round(py)+((ph>1400&&ph<1600)||(ph>2900&&ph<3100)?1:0));}},
+};
+function illHTML(id){const I=ILL[id];return `<p class="eyebrow">${esc(I.ey)}</p><h2>${L(I.ti)}</h2><div class="ill"><canvas id="illCv" width="${IW}" height="${IH}" role="img" aria-label="${L(I.ti)}"></canvas></div><ul class="illcap">${I.cap.map(c=>`<li>${L(c)}</li>`).join('')}</ul>`;}
+let illRun=0;
+function sizeIll(c){const av=c.parentElement.clientWidth-20;const k=av/IW;const s=k>=2?Math.min(4,Math.floor(k)):k;c.style.width=Math.round(IW*s)+'px';c.style.height=Math.round(IH*s)+'px';}
+function renderPanel(){
+  if(!PN)return;const type=PN.type;
+  panelBody.innerHTML=type.startsWith('ill:')?illHTML(type.slice(4)):PANELS[type]();
+  const cvs=$('#illCv');if(!cvs)return;const id=type.slice(4);const g=cvs.getContext('2d');g.imageSmoothingEnabled=false;sizeIll(cvs);
+  const run=++illRun,t0=performance.now();
+  const f=now=>{if(run!==illRun||!PN)return;g.clearRect(0,0,IW,IH);try{ILL[id].draw(g,reduced?4200:Math.max(0,now-t0));}catch(err){console.warn(err);}if(!reduced)requestAnimationFrame(f);};
+  requestAnimationFrame(f);
+}
+const ILS={
+  'home:5,1':[nar('窗外是一顆好大的月亮。','A huge moon hangs outside the window.'),panel('ill:moon'),say('corgi','……那隻柯基，該不會是我吧？','...wait. Is that corgi me?')],
+  'home:1,2':[nar('電視上跑著一款像素 RPG。','A pixel RPG is running on the TV.'),panel('ill:rpg')],
+  'home:8,2':[nar('螢幕上開著 Path of Exile。','Path of Exile is open on the screen.'),panel('ill:loot')],
+  'ntust:2,1':[nar('一張阿爾卑斯山的海報。','A poster of the Alps.'),panel('ill:alps')],
+  'ntust:6,1':[nar('黑板寫滿了公式。','The blackboard is covered in formulas.'),panel('ill:board'),nar('角落有人偷畫了一隻柯基。','Someone drew a corgi in the corner.')],
+  'ntust:14,2':[nar('實驗室的電腦還開著論文的程式。','The lab computer is still running his thesis code.'),panel('ill:thesis')],
+  'deloitte:5,1':[nar('白板上是一張風險熱力圖。','A risk heat map on the whiteboard.'),panel('ill:risk')],
+  'deloitte:10,2':[nar('一整排內控文件。','A row of internal-control binders.'),panel('ill:ipo')],
+  'fet:7,1':[nar('大螢幕亮著電商成長儀表板。','The big screen shows the e-commerce growth dashboard.'),panel('ill:dash')],
+  'fet:2,4':[nar('eStore 智慧型手機專區。','The eStore smartphone section.'),panel('ill:estore')],
+  'fet:4,6':[nar('friDay 購物轉虧小組的座位。','The friDay Shopping turnaround squad’s desk.'),panel('ill:friday')],
+  'fet:14,4':[nar('白板上是一組 A/B 測試結果。','An A/B test result on the whiteboard.'),panel('ill:churn')],
+  'fet:11,6':[nar('桌上攤著三份模型文件。','Three model documents on the desk.'),panel('ill:models')],
+  'fet:16,6':[nar('伺服器嗡嗡作響。','The servers hum.'),panel('ill:etl')],
+  'travel:1,3':[nar('電腦開著旅行社的品牌官網。','The agency’s brand website is open.'),panel('ill:web')],
+  'travel:11,3':[nar('一支導遊旗。','A tour guide’s flag.'),panel('ill:tour')],
+  'ktv:5,1':[nar('牆上的大螢幕是營運儀表板。','The big screen is the operations dashboard.'),panel('ill:ktvdash')],
+  'ktv:1,3':[nar('櫃檯上的訂房平板。','A booking tablet on the counter.'),panel('ill:booking')],
+};
+for(const[k,sc]of Object.entries(ILS)){const[m,xy]=k.split(':');const[x,y]=xy.split(',').map(Number);const o=INT[m].obj.find(o=>o.x===x&&o.y===y);if(o){o.s=sc;o.ill=1;}else console.warn('ILS miss',k);}
+
+/* panels */
+const panelEl=$('#panel'),panelBody=$('#panelBody'),panelWin=$('#panelWin');
+let PN=null;
+function portraitURL(){const c=document.createElement('canvas');c.width=16;c.height=16;c.getContext('2d').drawImage(SPR.jeff.down[0],0,0);return c.toDataURL();}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const L=(o)=>esc(tx(o));
+const PANELS={
+  status:()=>`<p class="eyebrow">STATUS</p><h2>${esc(PROFILE.name)}</h2>
+    <div class="row" style="margin-top:14px"><img class="portrait" src="${portraitURL()}" alt="Jeff pixel portrait">
+    <dl class="stats"><dt>${L(Z('職業','Class'))}</dt><dd>${L(PROFILE.cls)}</dd><dt>EXP</dt><dd>${L(PROFILE.exp)}</dd>
+    <dt>${L(Z('據點','Base'))}</dt><dd>${L(PROFILE.base)}</dd><dt>${L(Z('語言','Languages'))}</dt><dd>${L(PROFILE.langs)}</dd>
+    <dt>${L(Z('徽章','Badges'))}</dt><dd>${S.badges.size} / 7</dd></dl></div>
+    <h3>${L(Z('性格特質','Traits'))}</h3><ul class="traits">${TRAITS.map(t=>`<li><b>${L(t.n)}</b>${L(t.d)}</li>`).join('')}</ul>
+    <h3>${L(Z('興趣','Hobbies'))}</h3><ul>${HOBBIES.map(h=>`<li>${L(h)}</li>`).join('')}</ul>
+    <h3>${L(Z('一段話介紹','In a paragraph'))}</h3><p>${L(PROFILE.summary)}</p>`,
+  skills:()=>`<p class="eyebrow">SKILL TREE</p><h2>${L(Z('技能','Skills'))}</h2><p class="muted">${L(Z('六派招式，外加一路累積的 5 年以上實戰經驗。','Six schools of moves, backed by 5+ years in the field.'))}</p>
+    <div class="skillgrid" style="margin-top:14px">${SKILLS.map(s=>`<div class="skill"><h4><span class="gem" style="--c:${s.c}"></span>${L(s.n)}</h4><div class="tags">${s.items.map(i=>`<span class="tag">${L(i)}</span>`).join('')}</div></div>`).join('')}</div>`,
+  badges:()=>`<p class="eyebrow">BADGE CASE</p><h2>${L(Z('徽章','Badges'))}　${S.badges.size}/7</h2>
+    <ul class="badgelist" style="margin-top:14px">${BADGES.map(b=>{const got=S.badges.has(b.id);return `<li class="${got?'got':''}"><span class="gem ${got?'':'off'}" style="--c:${b.c}"></span><div>${got?L(b.n):'？？？'}<small>${got?L(b.what):L(Z('地點：','Where: '))+L(b.where)}</small></div></li>`;}).join('')}</ul>`,
+  chart:()=>`<p class="eyebrow">ESTORE · SMARTPHONES</p><h2>${L(Z('營收成長','Revenue growth'))}</h2>
+    <p>${L(Z('部署購買傾向模型、鎖定高意圖用戶並再行銷猶豫的買家之後，智慧型手機營收的倍數：','Smartphone revenue multiple, after the purchase-propensity model and retargeting went live:'))}</p>
+    <div class="chart"><div class="bar"><span>${L(Z('之前','Before'))}</span><div class="track"><div class="fill" style="--c:#aeb0d4;width:${6/170*100}%"></div></div><span class="v">6×</span></div>
+    <div class="bar"><span>${L(Z('之後','After'))}</span><div class="track"><div class="fill" style="--c:#f2c14e;width:100%"></div></div><span class="v">170×</span></div></div>
+    <p class="muted">${L(Z('長條依實際比例繪製。','Bars drawn to scale.'))}</p>`,
+  resume:()=>`<p class="eyebrow">RÉSUMÉ</p><h2>${esc(PROFILE.name)}</h2><p style="color:var(--gold)">${L(PROFILE.cls)}</p><p>${L(PROFILE.summary)}</p>
+    ${contactBlock()}
+    <h3>${L(Z('工作經驗','Experience'))}</h3>${EXP.map(jobHTML).join('')}
+    <h3>${L(Z('學歷','Education'))}</h3>${EDU.map(jobHTML).join('')}
+    <h3>${L(Z('技能','Skills'))}</h3><div class="skillgrid">${SKILLS.map(s=>`<div class="skill"><h4><span class="gem" style="--c:${s.c}"></span>${L(s.n)}</h4><div class="tags">${s.items.map(i=>`<span class="tag">${L(i)}</span>`).join('')}</div></div>`).join('')}</div>
+    <h3>${L(Z('語言','Languages'))}</h3><p>${L(PROFILE.langs)}</p>
+    <h3>${L(Z('性格與興趣','Personality & hobbies'))}</h3><ul class="traits">${TRAITS.map(t=>`<li><b>${L(t.n)}</b>${L(t.d)}</li>`).join('')}</ul><ul style="margin-top:12px">${HOBBIES.map(h=>`<li>${L(h)}</li>`).join('')}</ul>`,
+  contact:()=>`<p class="eyebrow">CONTACT</p><h2>${L(Z('聯絡 Jeff','Contact Jeff'))}</h2><p>${L(Z('正在找數據分析的下一個舞台。歡迎來信聊聊。','Looking for the next stage in data analytics. Happy to talk.'))}</p>${contactBlock()}`,
+  ending:()=>{const sec=Math.round((performance.now()-S.t0)/1000);const mm=Math.floor(sec/60),ss=String(sec%60).padStart(2,'0');
+    return `<p class="eyebrow">NEXT STAGE</p><p class="big">${L(Z('下一站：你的團隊？','Next stage: your team?'))}</p>
+    <p style="margin-top:14px">${L(Z('謝謝你走完 Jeff 的旅程。從工業管理、風險諮詢、電信數據分析，到在胡志明市把系統做出來，他的下一張地圖還空著。','Thanks for walking Jeff’s journey. Industrial management, risk consulting, telecom analytics, then building real systems in Ho Chi Minh City. His next map is still blank.'))}</p>
+    <div class="statline"><div><b>${S.badges.size}/7</b><span class="muted">${L(Z('徽章','badges'))}</span></div><div><b>${mm}:${ss}</b><span class="muted">${L(Z('遊玩時間','play time'))}</span></div><div><b>${S.visited.size}/7</b><span class="muted">${L(Z('探索地點','places visited'))}</span></div></div>
+    ${contactBlock()}
+    <div class="contact" style="margin-top:18px"><button class="btn" type="button" data-open="resume">${L(Z('看完整履歷','Read the full résumé'))}</button><button class="btn" type="button" data-close>${L(Z('繼續探索','Keep exploring'))}</button><button class="btn" type="button" data-restart>${L(Z('從頭開始','Start over'))}</button></div>`;},
+};
+function jobHTML(j){return `<div class="job"><div class="top"><span class="role">${L(j.role)}｜${L(j.org)}</span><span class="time">${esc(j.time)}</span></div>${j.lead?`<p class="lead">${L(j.lead)}</p>`:''}<ul>${j.pts.map(p=>`<li>${L(p)}</li>`).join('')}</ul></div>`;}
+function contactBlock(){return `<div class="contact"><code class="mail" id="mailTxt">${PROFILE.email}</code><button class="btn primary" type="button" data-copy>${L(Z('複製 Email','Copy email'))}</button><a class="btn" href="${PROFILE.linkedin}" target="_blank" rel="noopener">LinkedIn ↗</a></div>`;}
+function openPanel(type){
+  return new Promise(res=>{closeMenu(true);PN={type,resolve:res};if(S.mode==='title')$('#title').hidden=true;panelEl.hidden=false;renderPanel();panelWin.scrollTop=0;sfx.sel();setTimeout(()=>$('#panelX').focus({preventScroll:true}),30);});
+}
+function closePanel(){if(!PN)return;illRun++;const r=PN.resolve;PN=null;panelEl.hidden=true;if(S.mode==='title'){$('#title').hidden=false;renderTitleMenu();}sfx.sel();r();}
+$('#panelX').onclick=closePanel;
+panelEl.addEventListener('click',e=>{
+  if(e.target===panelEl){closePanel();return;}
+  const cp=e.target.closest('[data-copy]');if(cp){copyMail();return;}
+  const op=e.target.closest('[data-open]');if(op){PN.type=op.dataset.open;renderPanel();panelWin.scrollTop=0;return;}
+  if(e.target.closest('[data-close]'))closePanel();
+  if(e.target.closest('[data-restart]')){closePanel();setTimeout(()=>{resetProgress();S.mode='title';startGame();},60);}
+});
+function copyMail(){
+  const ok=()=>toast(Z('已複製 Email','Email copied'));
+  const fb=()=>{const el=$('#mailTxt');if(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);}toast(Z('已選取，請按複製','Selected. Press copy.'));};
+  try{navigator.clipboard.writeText(PROFILE.email).then(ok,fb);}catch(e){fb();}
+}
+let toastT=0;function toast(z){const el=$('#toast');el.textContent=tx(z);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1800);}
+
+/* menu */
+const menuEl=$('#menu');let MN=null;
+const MENU_ITEMS=[
+  {id:'status',n:Z('狀態','Status')},{id:'skills',n:Z('技能','Skills')},{id:'badges',n:Z('徽章','Badges')},
+  {id:'resume',n:Z('完整履歷','Full résumé')},{id:'contact',n:Z('聯絡 Jeff','Contact Jeff')},
+  {id:'lang',n:Z('Switch to English','切換成中文')},{id:'title',n:Z('返回首頁','Back to title')}];
+function openMenu(){if(MN||scriptBusy||PN)return;MN={sel:0};sfx.sel();renderMenu();menuEl.hidden=false;}
+function closeMenu(silent){if(!MN)return;MN=null;menuEl.hidden=true;if(!silent)sfx.sel();}
+function renderMenu(){if(!MN)return;menuEl.innerHTML=`<h2>MENU</h2>`+MENU_ITEMS.map((m,i)=>`<button type="button" class="opt${i===MN.sel?' sel':''}" data-i="${i}">${L(m.n)}</button>`).join('');}
+menuEl.addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b)menuPick(+b.dataset.i);});
+menuEl.addEventListener('pointerover',e=>{const b=e.target.closest('[data-i]');if(b&&MN){MN.sel=+b.dataset.i;[...menuEl.querySelectorAll('.opt')].forEach((x,i)=>x.classList.toggle('sel',i===MN.sel));}});
+function menuPick(i){const it=MENU_ITEMS[i];if(it.id==='title'){goTitle();return;}if(it.id==='lang'){setLang(LANG==='zh'?'en':'zh');renderMenu();return;}openPanel(it.id);}
+
+/* ================= language ================= */
+function setLang(l){LANG=l;try{localStorage.setItem('jq_lang',l);}catch(e){}document.documentElement.lang=l==='zh'?'zh-Hant':'en';applyI18n();}
+function applyI18n(){
+  $('#tSub').textContent=tx(Z('一位數據分析師的像素人生','A data analyst’s life, in pixels'));
+  $('#tHint').textContent=tx(isTouch?Z('左下方向鍵移動・A 調查・B 跑步 / 返回','D-pad to move · A to inspect · B to run / go back'):Z('方向鍵 / WASD 移動・空白鍵 調查・Esc 選單・Shift 跑步','Arrows / WASD to move · Space to inspect · Esc for menu · Shift to run'));
+  document.querySelectorAll('.langsw button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===LANG));
+  $('#bMenu').textContent=tx(Z('選單','MENU'));
+  renderTitleMenu();renderMenu();
+  if(PN)renderPanel();
+  if(S.zone>=0)showLoc(S.map==='world'?ZONES[S.zone].n:INAME[S.map],true);
+}
+let TM={sel:0};
+function hasProgress(){return S.badges.size>0||S.t0>0||S.seen.size>0||S.intro;}
+function titleItems(){
+  if(TM.confirm)return[{id:'reset-yes',n:Z('確定，清除進度從頭開始','Yes, erase progress and restart')},{id:'reset-no',n:Z('取消','Cancel')}];
+  const it=[{id:'start',n:hasProgress()?Z('繼續冒險','Continue adventure'):Z('開始冒險','Start adventure')}];
+  if(hasProgress())it.push({id:'reset',n:Z('從頭開始','Start over')});
+  it.push({id:'resume',n:Z('直接看履歷','Just show me the résumé')});return it;}
+function renderTitleMenu(){const el=$('#tMenu');TM.sel=Math.min(TM.sel,titleItems().length-1);el.innerHTML=titleItems().map((m,i)=>`<button type="button" class="opt${i===TM.sel?' sel':''}" data-t="${i}">${L(m.n)}</button>`).join('');}
+$('#tMenu').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b)titlePick(+b.dataset.t);});
+$('#tMenu').addEventListener('pointerover',e=>{const b=e.target.closest('[data-t]');if(b){TM.sel=+b.dataset.t;document.querySelectorAll('#tMenu .opt').forEach((x,i)=>x.classList.toggle('sel',i===TM.sel));}});
+document.querySelectorAll('.langsw button').forEach(b=>b.onclick=()=>{setLang(b.dataset.lang);sfx.sel();});
+function titlePick(i){const id=titleItems()[i].id;audio();
+  if(id==='resume'){openPanel('resume');return;}
+  if(id==='reset'){TM.confirm=true;TM.sel=1;renderTitleMenu();sfx.sel();return;}
+  if(id==='reset-no'){TM.confirm=false;TM.sel=0;renderTitleMenu();sfx.sel();return;}
+  if(id==='reset-yes'){TM.confirm=false;TM.sel=0;resetProgress();}
+  startGame();}
+function resetProgress(){
+  S.badges.clear();S.seen.clear();S.visited.clear();S.intro=false;S.t0=0;save();
+  for(const k of Object.keys(MAPS))delete MAPS[k];MAPS.world=makeMap('world');S.map='world';
+  Object.assign(P,{x:8,y:16,fx:8,fy:16,moving:false,t:0,dir:'down',walking:false});Object.assign(C,{x:9,y:17,fx:9,fy:17,moving:false,t:0,dir:'left'});
+  updateHUD();
+}
+
+/* ================= HUD ================= */
+let locT=0;
+function showLoc(n,quiet){const el=$('#loc');el.textContent=tx(n);el.classList.add('show');clearTimeout(locT);locT=setTimeout(()=>el.classList.remove('show'),quiet?1500:2800);}
+function updateHUD(pop){$('#badgeCount').textContent=S.badges.size;if(pop){const b=$('#bBadges');b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');}}
+$('#bMenu').onclick=()=>{if(S.mode!=='play')return;MN?closeMenu():openMenu();};
+$('#bBadges').onclick=()=>{if(S.mode==='play'&&!scriptBusy&&!PN)openPanel('badges');};
+$('#bMusic').onclick=()=>setMusic(!S.music,true);
+
+/* ================= movement / world logic ================= */
+function npcAt(M,x,y,self){return M.npcs.find(n=>n!==self&&((n.x===x&&n.y===y)||(n.moving&&n.fx===x&&n.fy===y)));}
+function blocked(M,x,y,self){
+  if(x<0||y<0||x>=M.w||y>=M.h)return true;
+  if(M.solid[y][x])return true;
+  if(npcAt(M,x,y,self))return true;
+  if(self!==P&&((P.x===x&&P.y===y)||(P.fx===x&&P.fy===y)))return true;
+  if(self!==P&&self!==C&&((C.x===x&&C.y===y)||isWarp(M,x,y)))return true;
+  return false;
+}
+function isWarp(M,x,y){if(M.id==='world')return M.buildings.some(b=>b.door===x&&b.y+b.h-1===y);return M.grid[y][x]==='D';}
+function startMove(e,d,dur){const[dx,dy]=DV[d];e.fx=e.x;e.fy=e.y;e.x+=dx;e.y+=dy;e.t=0;e.moving=true;e.dir=d;e.dur=dur;e.step++;}
+let bumpT=0;
+function tryStep(d){
+  const M=cur();const[dx,dy]=DV[d];const nx=P.x+dx,ny=P.y+dy;P.dir=d;
+  if(blocked(M,nx,ny,P)){if(bumpT<=0){sfx.bump();bumpT=.35;}return;}
+  const ox=P.x,oy=P.y;const dur=running()?.09:.16;startMove(P,d,dur);
+  // corgi follows into the player's previous tile
+  if(C.x!==ox||C.y!==oy){const cdx=ox-C.x,cdy=oy-C.y;if(Math.abs(cdx)+Math.abs(cdy)===1){startMove(C,cdx>0?'right':cdx<0?'left':cdy>0?'down':'up',dur);}else{C.x=C.fx=ox;C.y=C.fy=oy;}}
+}
+function advance(e,dt){if(!e.moving)return false;e.t+=dt/e.dur;if(e.t>=1){e.t=0;e.moving=false;e.fx=e.x;e.fy=e.y;return true;}return false;}
+let fading=false;
+function fade(on){$('#fade').classList.toggle('on',on);}
+async function warp(to,px,py,dir){
+  fading=true;sfx.door();fade(true);await wait(reduced?0:200);
+  S.map=to;if(!MAPS[to])MAPS[to]=makeMap(to);
+  P.x=P.fx=px;P.y=P.fy=py;P.dir=dir;P.moving=false;
+  const back=DV[OPP[dir]];C.x=C.fx=px+back[0];C.y=C.fy=py+back[1];C.moving=false;
+  if(to==='world'){S.zone=-1;checkZone();}else{S.visited.add(to);S.zone=0;showLoc(INAME[to]);}
+  fade(false);await wait(reduced?0:120);fading=false;
+}
+function onArrive(){
+  const M=cur();
+  if(M.id==='world'){const b=M.buildings.find(b=>b.door===P.x&&b.y+b.h-1===P.y);if(b){const I=INT[b.id];const dx=I.grid[I.grid.length-1].indexOf('D');warp(b.id,dx,I.grid.length-2,'up');return;}checkZone();}
+  else if(M.grid[P.y][P.x]==='D'){const b=BUILDINGS.find(b=>b.id===M.id);warp('world',b.door,b.y+b.h,'down');}
+}
+function checkZone(){const z=ZONES.findIndex(z=>P.x<z.x1);if(z!==S.zone){S.zone=z;showLoc(ZONES[z].n);}}
+const KN={tv:Z('電視','TV'),pc:Z('電腦','Computer'),bookshelf:Z('書櫃','Bookshelf'),window:Z('窗戶','Window'),mirror:Z('鏡子','Mirror'),bed:Z('床','Bed'),table:Z('桌子','Table'),globe:Z('地球儀','Globe'),plant:Z('盆栽','Plant'),blackboard:Z('黑板','Blackboard'),poster:Z('海報','Poster'),diploma:Z('畢業證書','Diplomas'),desk:Z('課桌','Desk'),whiteboard:Z('白板','Whiteboard'),binders:Z('文件櫃','Binders'),screen:Z('大螢幕','Big screen'),phone:Z('手機展示台','Phone display'),abboard:Z('A/B 白板','A/B board'),server:Z('伺服器','Servers'),scroll:Z('卷軸','Scroll'),banner:Z('掛軸','Hanging scroll'),flag:Z('導遊旗','Tour flag'),rack:Z('行程 DM','Brochures'),mapwall:Z('地圖','Map'),counter:Z('櫃檯','Counter'),sofa:Z('沙發','Sofa'),mic:Z('麥克風','Microphone'),sign:Z('告示牌','Sign'),bench:Z('長椅','Bench'),bike:Z('機車','Scooter'),cart:Z('咖啡攤','Coffee cart'),stall:Z('水果攤','Fruit stall'),gate:Z('NEXT STAGE 大門','NEXT STAGE gate')};
+const TOPOFF={tv:-4,pc:-6,bookshelf:-8,binders:-6,phone:-6,abboard:-6,server:-4,flag:-6,cart:-8,stall:-8,gate:-12};
+function facing(){
+  const M=cur();const[dx,dy]=DV[P.dir];const fx=P.x+dx,fy=P.y+dy;
+  if(C.x===fx&&C.y===fy&&!C.moving)return{kind:'corgi'};
+  const n=M.npcs.find(n=>n.x===fx&&n.y===fy);if(n)return{kind:'npc',n};
+  if(fx>=0&&fy>=0&&fx<M.w&&fy<M.h){const o=M.objAt[fy][fx];if(o&&o.s)return{kind:'obj',o};}
+  return null;
+}
+const objKey=(M,o)=>M.id+'#'+M.objs.indexOf(o), npcKey=(M,n)=>M.id+'@'+n.id;
+function interact(){
+  const M=cur();const f=facing();if(!f)return;
+  if(f.kind==='corgi'){C.dir=P.dir==='left'?'right':'left';run(corgiTalk());return;}
+  if(f.kind==='npc'){f.n.dir=OPP[P.dir];S.seen.add(npcKey(M,f.n));save();run(resolveScript(f.n.s));return;}
+  S.seen.add(objKey(M,f.o));save();run(resolveScript(f.o.s));
+}
+const promptEl=$('#prompt');let lastPrompt='';
+function updatePrompt(){
+  let h='';
+  if(S.mode==='play'&&canMove()&&!P.moving){const f=facing();if(f){
+    const verb=f.kind==='obj'?Z('調查','Inspect'):Z('交談','Talk to');
+    const nm=f.kind==='corgi'?N.corgi:f.kind==='npc'?N[f.n.id]:(KN[f.o.k]||Z('東西','this'));
+    h=`<kbd>${isTouch?'A':'SPACE'}</kbd>${L(verb)}${LANG==='zh'?'・':' '}${L(nm)}`;}}
+  if(h!==lastPrompt){lastPrompt=h;promptEl.innerHTML=h;promptEl.hidden=!h;}
+}
+function sparkle(x,y,now,seed){const ph=(now/130+seed*11)%9;if(ph>5)return;const st=ph<1||ph>4?0:(ph<2||ph>3?1:2);
+  R(ctx,x,y,1,1,'#ffffff');if(st>=1){R(ctx,x-1,y,3,1,'#fff6c8');R(ctx,x,y-1,1,3,'#fff6c8');R(ctx,x,y,1,1,'#ffffff');}
+  if(st>=2){R(ctx,x-3,y,1,1,'#f2c14e');R(ctx,x+3,y,1,1,'#f2c14e');R(ctx,x,y-3,1,1,'#f2c14e');R(ctx,x,y+3,1,1,'#f2c14e');R(ctx,x-2,y,1,1,'#fff6c8');R(ctx,x+2,y,1,1,'#fff6c8');R(ctx,x,y-2,1,1,'#fff6c8');R(ctx,x,y+2,1,1,'#fff6c8');}}
+function bubble(x,y,now){const b=Math.floor(now/420)%2;const X=x+9,Y=y-16-b;R(ctx,X-1,Y-1,13,9,'#1d1726');R(ctx,X,Y,11,7,'#f4efe3');R(ctx,X+1,Y+8,3,1,'#1d1726');R(ctx,X+1,Y+7,2,1,'#f4efe3');
+  const d=1+Math.floor(now/320)%3;for(let i=0;i<d;i++)R(ctx,X+2+i*3,Y+3,2,2,'#1d1726');}
+function brackets(x,y,w,h,now){const p=Math.floor(now/260)%2;x-=2+p;y-=2+p;w+=4+2*p;h+=4+2*p;
+  for(const [c,o] of [['#1d1726',1],['#ffffff',0]]){const X=x+o,Y=y+o;
+    R(ctx,X,Y,5,1,c);R(ctx,X,Y,1,5,c);R(ctx,X+w-5,Y,5,1,c);R(ctx,X+w-1,Y,1,5,c);
+    R(ctx,X,Y+h-1,5,1,c);R(ctx,X,Y+h-5,1,5,c);R(ctx,X+w-5,Y+h-1,5,1,c);R(ctx,X+w-1,Y+h-5,1,5,c);}}
+function resolveScript(s){if(s==='gate')return gateScript();if(s==='keeper')return keeperScript();return s;}
+function corgiTalk(){
+  const next=BADGES.find(b=>!S.badges.has(b.id));
+  if(!next)return[say('corgi','汪！徽章全拿到了。往最東邊的大門走吧！','Woof! You have every badge. Head for the gate in the far east!')];
+  return[nar('（你摸了摸柯基。牠很滿意。）','(You pet the corgi. It approves.)'),say('corgi',`下一站推薦：${next.where.zh}。那裡有「${next.n.zh}」。`,`Try ${next.where.en} next. The ${next.n.en} is waiting there.`)];
+}
+function keeperScript(){const k=S.badges.size;
+  if(k>=7)return[say('keeper','7 枚徽章都到齊了！大門就在我右手邊，去吧。','All 7 badges! The gate is right beside me. Go on.')];
+  return[say('keeper','這扇門通往「下一站」。',"This gate leads to the Next Stage."),say('keeper',`你現在有 ${k}/7 枚徽章。集滿再來會比較有成就感，不過我不會攔你。`,`You have ${k}/7 badges. It feels better with all of them, but I won’t stop you.`)];}
+function gateScript(){const k=S.badges.size;
+  const end=[{fn:'ending'}];
+  if(k>=7)return[nar('大門發出光芒。門上刻著：NEXT STAGE。','The gate glows. Carved above it: NEXT STAGE.'),...end];
+  return[nar('門上刻著：NEXT STAGE。','Carved above the gate: NEXT STAGE.'),choice(null,Z(`你有 ${k}/7 枚徽章。要現在通過嗎？`,`You have ${k}/7 badges. Go through now?`),[Z('現在通過','Go through'),Z('再逛逛','Keep exploring')],[end,[]])];}
+FN.ending=async()=>{hideDialog();sfx.badge();await openPanel('ending');};
+function running(){return keys.has('ShiftLeft')||keys.has('ShiftRight')||padB;}
+
+/* ================= input ================= */
+const keys=new Set();let dirStack=[];let padDir=null,padB=false;
+const DIRK={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+addEventListener('keydown',e=>{
+  if(PN){if(e.code==='Escape'||e.code==='KeyX'||e.code==='Backspace'){e.preventDefault();closePanel();}return;}
+  const d=DIRK[e.code];
+  if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();
+  if(d){
+    if(S.mode==='title'){if(d==='up'||d==='down'){const n=titleItems().length;TM.sel=(TM.sel+(d==='down'?1:-1)+n)%n;renderTitleMenu();sfx.sel();}return;}
+    if(MN){if(d==='up'||d==='down'){MN.sel=(MN.sel+(d==='down'?1:-1)+MENU_ITEMS.length)%MENU_ITEMS.length;renderMenu();sfx.sel();}return;}
+    if(CH){if(d==='up'||d==='down'){CH.sel=(CH.sel+(d==='down'?1:-1)+CH.opts.length)%CH.opts.length;renderChoicesSel();sfx.sel();}return;}
+    if(!dirStack.includes(d))dirStack.push(d);
+  }
+  keys.add(e.code);
+  if(e.repeat)return;
+  if(e.code==='Space'||e.code==='Enter'||e.code==='KeyZ'){if(document.activeElement&&document.activeElement.tagName==='BUTTON')e.preventDefault();pressA();}
+  else if(e.code==='Escape'||e.code==='KeyX'||e.code==='KeyM')pressB();
+});
+addEventListener('keyup',e=>{keys.delete(e.code);const d=DIRK[e.code];if(d)dirStack=dirStack.filter(x=>x!==d);});
+addEventListener('blur',()=>{keys.clear();dirStack=[];padDir=null;padB=false;});
+function heldDir(){return padDir||dirStack[dirStack.length-1]||null;}
+function pressA(){
+  if(PN)return;
+  if(S.mode==='title'){titlePick(TM.sel);return;}
+  if(MN){menuPick(MN.sel);return;}
+  if(CH){CH.resolve(CH.sel);return;}
+  if(W8){if(!W8.full)W8.finish();else W8.resolve();return;}
+  if(canMove()&&!P.moving)interact();
+}
+function pressB(){
+  if(PN){closePanel();return;}
+  if(MN){closeMenu();return;}
+  if(CH){CH.resolve(CH.opts.length-1);return;}
+  if(W8){pressA();return;}
+  if(S.mode==='play'&&!scriptBusy)openMenu();
+}
+function canMove(){return S.mode==='play'&&!scriptBusy&&!MN&&!PN&&!fading;}
+// touch pad
+const dpad=$('#dpad');
+function padFrom(e){const r=dpad.getBoundingClientRect();const x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2;if(Math.hypot(x,y)<12)return null;return Math.abs(x)>Math.abs(y)?(x>0?'right':'left'):(y>0?'down':'up');}
+function setPad(d){
+  if(MN&&d&&d!==padDir&&(d==='up'||d==='down')){MN.sel=(MN.sel+(d==='down'?1:-1)+MENU_ITEMS.length)%MENU_ITEMS.length;renderMenu();}
+  if(CH&&d&&d!==padDir&&(d==='up'||d==='down')){CH.sel=(CH.sel+(d==='down'?1:-1)+CH.opts.length)%CH.opts.length;renderChoicesSel();}
+  padDir=d;dpad.querySelectorAll('i').forEach(i=>i.classList.toggle('on',d&&i.classList.contains(d[0])));}
+dpad.addEventListener('pointerdown',e=>{e.preventDefault();dpad.setPointerCapture(e.pointerId);setPad(padFrom(e));});
+dpad.addEventListener('pointermove',e=>{if(dpad.hasPointerCapture(e.pointerId))setPad(padFrom(e));});
+for(const ev of['pointerup','pointercancel','lostpointercapture'])dpad.addEventListener(ev,()=>setPad(null));
+$('#aBtn').addEventListener('pointerdown',e=>{e.preventDefault();audio();pressA();});
+$('#bBtn').addEventListener('pointerdown',e=>{e.preventDefault();padB=true;if(!canMove()||MN)pressB();});
+for(const ev of['pointerup','pointercancel','pointerleave'])$('#bBtn').addEventListener(ev,()=>padB=false);
+
+/* ================= game flow ================= */
+function goTitle(){
+  closeMenu(true);hideDialog();S.mode='title';$('#hud').hidden=true;$('#pad').classList.remove('on');$('#prompt').hidden=true;lastPrompt='';
+  $('#title').hidden=false;TM.sel=0;TM.confirm=false;renderTitleMenu();sfx.sel();
+}
+function startGame(){
+  try{document.activeElement&&document.activeElement.blur();}catch(e){}
+  S.mode='play';if(!S.t0)S.t0=performance.now();$('#title').hidden=true;$('#hud').hidden=false;$('#pad').classList.add('on');
+  updateHUD();sfx.ok();S.zone=-1;if(S.map==='world')checkZone();else{S.zone=0;showLoc(INAME[S.map]);}
+  if(S.music&&!mG)setMusic(true);
+  if(!S.intro){S.intro=true;save();setTimeout(()=>run([
+    say('corgi','汪！你醒啦。這裡是 Jeff 的世界。','Woof! You’re up. Welcome to Jeff’s world.'),
+    say('corgi','這座小鎮照著他的人生排好了：往東走，就是往未來走。','This town is laid out along his life. Walk east, and you walk forward in time.'),
+    say('corgi','每個地方都藏著一枚徽章。集滿 7 枚，最東邊的大門會為你打開。','Every place hides a badge. Collect all 7 and the gate in the far east opens for you.'),
+    say('corgi',isTouch?'用左下方向鍵移動，A 調查，右上角有選單。我會一直跟著你。':'方向鍵移動、空白鍵調查、Esc 開選單。我會一直跟著你。',isTouch?'Use the D-pad to move and A to inspect. The menu is top right. I’ll follow you.':'Arrow keys to move, Space to inspect, Esc for the menu. I’ll follow you.'),
+    say('corgi','先進家裡看看吧，門就在你正上方。','Start with the house. The door is right above you.'),
+  ]),350);}
+}
+
+/* ================= render ================= */
+let SCALE=3,CW=320,CH_=200;
+function resize(){
+  const w=innerWidth,h=innerHeight;
+  SCALE=Math.max(2,Math.min(6,Math.floor(Math.min(w/(T*18),h/(T*11)))));
+  if(w<520)SCALE=2;
+  CW=Math.ceil(w/SCALE);CH_=Math.ceil(h/SCALE);cv.width=CW;cv.height=CH_;cv.style.width=CW*SCALE+'px';cv.style.height=CH_*SCALE+'px';ctx.imageSmoothingEnabled=false;
+}
+addEventListener('resize',()=>{resize();const c=$('#illCv');if(c)sizeIll(c);});
+const epos=e=>{const k=e.moving?e.t:0;return[Math.round((e.fx+(e.x-e.fx)*k)*T),Math.round((e.fy+(e.y-e.fy)*k)*T)];};
+function drawChar(e,spr,cx,cy){
+  const[px,py]=epos(e);const X=px-cx,Y=py-cy;
+  if(X<-20||Y<-24||X>CW+4||Y>CH_+4)return;
+  ctx.fillStyle='rgba(20,15,30,.28)';ctx.fillRect(X+3,Y+13,10,3);ctx.fillRect(X+4,Y+12,8,1);
+  const fr=spr[e.dir]||spr.down;let i=0;if(e.moving)i=e.t<.5?(e.step%2?1:3):0;
+  ctx.drawImage(fr[i],X,Y-4);
+}
+function drawCorgi(cx,cy){const[px,py]=epos(C);const X=px-cx,Y=py-cy;ctx.fillStyle='rgba(20,15,30,.28)';ctx.fillRect(X+3,Y+13,11,2);
+  const d=C.dir==='left'?'left':C.dir==='right'?'right':(C.lastH||'right');if(C.dir==='left'||C.dir==='right')C.lastH=C.dir;
+  const fr=CORGI[d][C.moving&&C.t<.5?1:0];ctx.drawImage(fr,X,Y-1);}
+function marker(x,y,t){const b=Math.round(Math.sin(t/180)*1.5);R(ctx,x+5,y-14+b,6,8,'#f4efe3');R(ctx,x+4,y-13+b,8,6,'#f4efe3');R(ctx,x+7,y-12+b,2,3,'#e0a21c');R(ctx,x+7,y-8+b,2,1,'#e0a21c');R(ctx,x+7,y-6+b,2,1,'#f4efe3');}
+function render(now){
+  const M=S.mode==='title'?MAPS.world:cur();ctx.fillStyle='#0b0c1c';ctx.fillRect(0,0,CW,CH_);
+  let cx,cy;const mw=M.w*T,mh=M.h*T;
+  if(S.mode==='title'){const span=mw-CW;cx=span>0?Math.round((Math.sin(now/9000)*.5+.5)*span):Math.round((mw-CW)/2);cy=Math.round(Math.min(Math.max(18.5*T-CH_/2,0),Math.max(0,mh-CH_)));if(mh<CH_)cy=Math.round((mh-CH_)/2);}
+  else{const[px,py]=epos(P);cx=mw<=CW?Math.round((mw-CW)/2):Math.round(Math.min(Math.max(px+8-CW/2,0),mw-CW));cy=mh<=CH_?Math.round((mh-CH_)/2):Math.round(Math.min(Math.max(py+8-CH_/2,0),mh-CH_));}
+  ctx.drawImage(M.layer,-cx,-cy);
+  // animated bits
+  const x0=Math.max(0,Math.floor(cx/T)),y0=Math.max(0,Math.floor(cy/T)),x1=Math.min(M.w,Math.ceil((cx+CW)/T)+1),y1=Math.min(M.h,Math.ceil((cy+CH_)/T)+1);
+  if(M.id==='world'){
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)if(M.grid[y][x]==='w'){const ph=((now/700+hash(x,y,9)*4)%4);const ox=(ph*4)|0;R(ctx,x*T-cx+ox+1,y*T-cy+4,4,1,'#9fd0f0');R(ctx,x*T-cx+((ox+8)%14),y*T-cy+10,3,1,'#9fd0f0');}
+    const tw=M.buildings[4];const tcx=tw.x*T+tw.w*T/2-cx,tty=tw.y*T-6-cy;R(ctx,tcx-1,tty-1,2,2,(now%1200)<600?'#ff4d4d':'#7a1d1d');
+    for(let k=0;k<2;k++){const r=((now/90+k*7)%14)+3;const a=1-r/17;ctx.fillStyle=`rgba(159,208,240,${a.toFixed(2)})`;for(const s of[-1,1])for(let j=-2;j<=2;j++){ctx.fillRect(Math.round(tcx+s*r*Math.cos(j*.3)),Math.round(tty+2+r*Math.sin(j*.3)),1,1);}}
+    const kb=M.buildings[6];const kc=(Math.floor(now/500)%3===2)?'#5ff2ff':'#ff5fa2';const kx=kb.x*T+kb.w*T/2-ptw('KTV',3)/2-cx,ky=kb.y*T+19-cy;
+    if(!((now%3100)>3000))ptext(ctx,'KTV',kx,ky,kc,3);
+    const gt=M.objs.find(o=>o.k==='gate');const gx=gt.x*T-cx,gy=gt.y*T-cy;const all=S.badges.size>=7;
+    for(let i=0;i<19;i++){const v=(i*2+now/60)%38;const col=all?(i%2?'#f2c14e':'#fff2b8'):(i%2?'#3fb6a8':'#2a5a78');R(ctx,gx+4,gy-6+Math.floor(v),8,1,col);}
+  }
+  // entities
+  const list=M.npcs.map(n=>({y:epos(n)[1],f:()=>drawChar(n,SPR[n.id],cx,cy)}));
+  if(M===cur())list.push({y:epos(C)[1]-1,f:()=>drawCorgi(cx,cy)},{y:epos(P)[1],f:()=>drawChar(P,SPR.jeff,cx,cy)});
+  list.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
+  if(S.mode==='play'){
+    M.objs.forEach((o,i)=>{if(!o.s||S.seen.has(M.id+'#'+i))return;if(o.badge&&!S.badges.has(o.badge))return;sparkle(o.x*T+o.w*T-4-cx,o.y*T+(TOPOFF[o.k]||0)-cy,now,hash(o.x,o.y,3));});
+    for(const n of M.npcs){const[px,py]=epos(n);if(n.badge&&!S.badges.has(n.badge))marker(px-cx,py-cy,now);else if(!S.seen.has(M.id+'@'+n.id))bubble(px-cx,py-cy,now);}
+    for(const o of M.objs)if(o.badge&&!S.badges.has(o.badge))marker(o.x*T-cx,o.y*T-cy+10,now);
+    if(canMove()&&!P.moving){const f=facing();if(f){
+      if(f.kind==='obj'){const o=f.o,to=TOPOFF[o.k]||0;brackets(o.x*T-cx,o.y*T+to-cy,o.w*T,o.h*T-to,now);}
+      else{const e=f.kind==='npc'?f.n:C;const[px,py]=epos(e);brackets(px-cx,py-cy-(f.kind==='npc'?5:0),16,f.kind==='npc'?21:16,now);}}}
+  }
+}
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;bumpT-=dt;
+  if(S.mode==='play'){
+    const M=cur();
+    if(advance(P,dt))onArrive();
+    advance(C,dt);
+    if(!P.moving&&canMove()){
+      const d=heldDir();
+      if(d){if(P.dir!==d&&!P.walking){P.dir=d;P.turn=.08;}else if((P.turn=(P.turn||0)-dt)<=0){P.walking=true;tryStep(d);}}
+      else P.walking=false;
+    }
+    for(const n of M.npcs){advance(n,dt);if(n.wander&&!n.moving&&canMove()){n.wt-=dt;if(n.wt<=0){n.wt=1.6+Math.random()*2.6;const ds=['up','down','left','right'];const d=ds[(Math.random()*4)|0];const[dx,dy]=DV[d];const nx=n.x+dx,ny=n.y+dy;n.dir=d;if(Math.abs(nx-n.ox)<=2&&Math.abs(ny-n.oy)<=1&&!blocked(M,nx,ny,n))startMove(n,d,.28);}}}
+  }
+  updatePrompt();render(now);requestAnimationFrame(loop);
+}
+
+/* ================= boot ================= */
+function boot(data){
+  load();if(data&&Array.isArray(data.badges))data.badges.forEach(b=>S.badges.add(b));
+  MAPS.world=makeMap('world');
+  document.documentElement.lang=LANG==='zh'?'zh-Hant':'en';
+  resize();applyI18n();updateHUD();
+  requestAnimationFrame(loop);
+}
+try{window.claude?.hot?.snapshot?.(()=>({badges:[...S.badges]}));}catch(e){}
+const H=window.claude?.hot;
+if(H&&typeof H.ready==='function')H.ready(boot);else boot(H?.data??{});
+})();
+</script>
+
+</body>
+</html>
