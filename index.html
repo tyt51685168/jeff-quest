@@ -27,8 +27,21 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 button:focus-visible,a:focus-visible{outline:2px dashed var(--gold);outline-offset:3px}
 #app{position:fixed;inset:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 #game{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
-#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .18s steps(4)}
+#fade{position:absolute;inset:0;z-index:50;background:#000;opacity:0;pointer-events:none;transition:opacity .18s steps(4)}
 #fade.on{opacity:1}
+#fade.flash{background:#fff;transition:none}
+
+/* battle */
+#battle{position:absolute;inset:0;pointer-events:none}
+.bbox{position:absolute;padding:8px 12px 10px;width:min(260px,56vw);font-size:15px}
+#bMon{left:16px;top:calc(16px + env(safe-area-inset-top,0px))}
+#bMe{right:16px;bottom:calc(200px + env(safe-area-inset-bottom,0px))}
+body.touch #bMe{bottom:calc(360px + env(safe-area-inset-bottom,0px))}
+.bbox .row2{display:flex;justify-content:space-between;gap:10px}
+.hp{display:flex;align-items:center;gap:6px;margin-top:6px;font:700 11px var(--disp);color:var(--gold)}
+.hp span{flex:1;height:10px;background:var(--void);border:2px solid var(--line);position:relative}
+.hp i{position:absolute;left:0;top:0;bottom:0;width:100%;background:#6fe36f;transition:width .6s steps(8)}
+.hp i.low{background:var(--rose)}
 
 /* DQ-style window */
 .win{background:var(--win);border:3px solid var(--edge);border-radius:8px;
@@ -182,6 +195,10 @@ kbd{font:inherit;font-size:.8em;background:var(--gold);color:var(--void);padding
 <div id="app">
   <canvas id="game" role="img" aria-label="Jeff Quest pixel world"></canvas>
   <div id="fade"></div>
+  <div id="battle" hidden>
+    <div class="win bbox" id="bMon"><div class="row2"><b id="bMonName"></b><span class="muted">Lv.??</span></div><div class="hp">HP<span><i id="bMonHp"></i></span></div></div>
+    <div class="win bbox" id="bMe"><div class="row2"><b>Jeff</b><span class="muted">Lv.5</span></div><div class="hp">HP<span><i id="bMeHp"></i></span></div></div>
+  </div>
   <div id="hud" hidden>
     <div id="loc" class="win"></div>
     <div class="hud-r">
@@ -233,7 +250,7 @@ const DV={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 const OPP={up:'down',down:'up',left:'right',right:'left'};
 
 /* ================= 3x5 pixel font for signs ================= */
-const FONT={A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110','4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001110','.':'000000000000010','-':'000000111000000','!':'010010010000010','?':'110001010000010',':':'000010000010000','>':'100010001010100','<':'001010100010001','=':'000111000111000','+':'000010111010000','(':'010100100100010',')':'010001001001010','/':'001001010100100','|':'010010010010010',',':'000000000010100','#':'101111101111101'};
+const FONT={A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110','4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001110','.':'000000000000010','-':'000000111000000','!':'010010010000010','?':'110001010000010',':':'000010000010000','>':'100010001010100','<':'001010100010001','=':'000111000111000','+':'000010111010000','(':'010100100100010',')':'010001001001010','/':'001001010100100','|':'010010010010010',',':'000000000010100','#':'101111101111101','%':'101001010100101'};
 function ptext(g,str,x,y,col,sc=1){g.fillStyle=col;x=Math.round(x);y=Math.round(y);let cx=x;for(const ch of str.toUpperCase()){const f=FONT[ch];if(f)for(let i=0;i<15;i++)if(f[i]==='1')g.fillRect(cx+(i%3)*sc,y+((i/3)|0)*sc,sc,sc);cx+=4*sc;}}
 const ptw=(s,sc=1)=>s.length*4*sc-sc;
 
@@ -272,6 +289,8 @@ const CORGI_R=["................","................","................",".......
 const CORGI_R2=[...CORGI_R];CORGI_R2[14]="....oo....oo....";
 const CPAL={o:'#2a1b16',y:'#e8913a',w:'#fbf3e4',e:'#1d1726'};
 const CORGI={right:[mk(CORGI_R,CPAL),mk(CORGI_R2,CPAL)],left:[mk(flip(CORGI_R),CPAL),mk(flip(CORGI_R2),CPAL)]};
+const CYPAL={o:'#1d1030',y:'#ff5fa2',w:'#5ff2ff',e:'#f2c14e'};
+const CORGI_CY={right:[mk(CORGI_R,CYPAL),mk(CORGI_R2,CYPAL)],left:[mk(flip(CORGI_R),CYPAL),mk(flip(CORGI_R2),CYPAL)]};
 
 const CHAR_PAL={
   jeff:{h:'#262033',c:'#2a9d8f',p:'#2f3553'},
@@ -293,7 +312,7 @@ const N={corgi:Z('柯基','Corgi'),prof:Z('教授','Professor'),senior:Z('學長
   manager:Z('經理','Manager'),coworker:Z('同事','Colleague'),boss:Z('高層主管','C-level exec'),marketing:Z('行銷同事','Marketing lead'),
   engineer:Z('資料工程師','Data engineer'),master:Z('道館主人','Hall master'),owner:Z('旅行社老闆','Agency owner'),customer:Z('客人','Customer'),
   ktvboss:Z('KTV 店長','KTV manager'),oldman:Z('老爺爺','Old man'),fresh:Z('新生','Freshman'),office:Z('上班族','Office worker'),
-  disciple:Z('道館弟子','Disciple'),fisher:Z('釣客','Fisher'),vendor:Z('咖啡攤老闆','Coffee vendor'),tourist:Z('觀光客','Tourist'),keeper:Z('守門人','Gatekeeper')};
+  disciple:Z('道館弟子','Disciple'),fisher:Z('釣客','Fisher'),vendor:Z('咖啡攤老闆','Coffee vendor'),tourist:Z('觀光客','Tourist'),keeper:Z('守門人','Gatekeeper'),futurejeff:Z('未來的 Jeff？','Future Jeff?')};
 const say=(n,zh,en)=>({n,t:Z(zh,en)});
 const nar=(zh,en)=>({n:null,t:Z(zh,en)});
 const badge=id=>({badge:id});
@@ -437,10 +456,14 @@ const W_OBJ=[
   {k:'cart',x:78,y:21,w:2,s:[nar('咖啡攤。煉乳沉在杯底，冰塊堆到滿。','A coffee cart. Condensed milk at the bottom, ice to the brim.')]},
   {k:'stall',x:88,y:22,w:2,s:[nar('水果攤：芒果、火龍果、紅毛丹。','A fruit stall: mango, dragon fruit, rambutan.')]},
   {k:'gate',x:96,y:18,h:2,s:'gate'},
+  // easter eggs
+  {k:'bush',x:14,y:26,s:'bush'},{k:'bush',x:19,y:25,s:'bush'},{k:'bush',x:25,y:26,s:'bush'},{k:'bush',x:59,y:23,s:'bush'},
+  {k:'pond',x:5,y:23,w:7,h:4,s:'pond'},
+  {k:'fishspot',x:64,y:22,s:'fish'},
+  {k:'shard',x:70,y:25,s:'shard'},
 ];
 const W_NPC=[
-  {id:'oldman',x:12,y:21,dir:'left',s:[say('oldman','別急著往東衝。每棟房子都進得去，裡面的東西大多能調查。',"Don't rush east. Every building has a door, and most things inside can be inspected."),
-    say('oldman',isTouch?'走累了就按住 B 跑步。':'走累了就按住 Shift 跑步。',isTouch?'Tired? Hold B to run.':'Tired? Hold Shift to run.')]},
+  {id:'oldman',x:12,y:21,dir:'left',s:'oldman'},
   {id:'fresh',x:21,y:21,dir:'down',wander:1,s:[say('fresh','聽說有個學長大學時用 C++ 從零寫類神經網路。現在我們 import 一行就好了……','I heard a senior once wrote a neural network from scratch in C++. We just import it in one line now...')]},
   {id:'office',x:36,y:21,dir:'down',wander:1,s:[say('office','這條街上的人都在趕報告。對面的道館倒是很安靜。','Everyone on this street is chasing a deadline. The hall across the road is nice and quiet, though.')]},
   {id:'disciple',x:47,y:21,dir:'down',s:[say('disciple','道館裡有六個卷軸，每個都是 Jeff 的一派招式。','There are six scrolls in the hall. Each one is a school of Jeff’s moves.'),say('disciple','師父會一次講完。他很有效率。','The master explains them all at once. He is efficient.')]},
@@ -454,7 +477,7 @@ const INT={
   home:{grid:["############","############","#..........#","#..........#","#..........#","#..........#","#..........#","#..........#","#####D######"],
     theme:{wall:'#e9d8b8',stripe:'#dcc7a2',floor:'wood',fa:'#c89a64',fb:'#a97c4b'},
     obj:[
-      {k:'window',x:5,y:1,w:2,moon:1,s:[nar('窗外是一顆好大的月亮。','A huge moon hangs outside the window.'),nar('Jeff 正在構築一個療癒系的奇幻世界：星空、暖黃色的咖啡館，還有一隻賽博柯基。','Jeff is building a cozy-fantasy world: starry skies, warm amber cafés, and a cyber corgi.'),say('corgi','……那隻柯基，該不會是我吧？','...wait. Is that corgi me?')]},
+      {k:'window',x:5,y:1,w:2,moon:1,s:'window'},
       {k:'mirror',x:10,y:1,badge:'heart',s:[nar('鏡子裡的人看著你。','The person in the mirror looks back at you.'),panel('status'),badge('heart')]},
       {k:'tv',x:1,y:2,w:2,s:[nar('電視上跑著一款像素 RPG。','A pixel RPG is running on the TV.'),nar('寶可夢、石器時代、星之卡比、王國之心……Jeff 從小就愛玩遊戲。','Pokémon, StoneAge, Kirby, Kingdom Hearts... Jeff has loved games since he was a kid.'),nar('所以這份履歷，也做成了一款遊戲。','So this résumé became one too.')]},
       {k:'bookshelf',x:3,y:2,w:2,s:[nar('動畫、設定集、世界觀筆記。','Anime, art books, world-building notes.'),nar('他喜歡從零打造一個世界：地圖、角色、光線、氣氛，全部自己定。','He likes building worlds from zero: the map, the characters, the light, the mood.')]},
@@ -552,7 +575,7 @@ const INT={
     obj:[
       {k:'screen',x:5,y:1,w:4,s:[nar('儀表板：包廂使用率、尖峰時段、營收趨勢。','Dashboard: room occupancy, peak hours, revenue trend.'),nar('每個月給投資人的營運報告，都直接從這套系統產出。','The monthly investor performance report comes straight out of this system.')]},
       {k:'counter',x:1,y:3,w:2,s:[nar('櫃檯上的訂房平板。','A booking tablet on the counter.'),nar('選包廂、選時段、確認。後台即時更新，前台不用再翻紙本。','Pick a room, pick a time, confirm. The back office updates instantly. No more paper logbook.')]},
-      {k:'mic',x:4,y:6,s:[choice(null,Z('要唱一首嗎？','Sing a song?'),[Z('唱！','Sing!'),Z('下次吧','Maybe later')],[[{fn:'sing'},nar('（你唱完了一首。柯基給了你 100 分。）','(You finish a song. The corgi gives you 100 points.)')],[nar('麥克風看起來有點失望。','The microphone looks a little disappointed.')]])]},
+      {k:'mic',x:4,y:6,s:'mic'},
       {k:'sofa',x:8,y:6,w:3,s:[nar('很軟的沙發。坐下去就不想起來了。','A very soft sofa. Once you sit, you stay.')]},
       {k:'plant',x:12,y:7,s:[nar('一盆被霓虹燈照成紫色的植物。','A plant, dyed purple by the neon.')]},
     ],
@@ -562,13 +585,16 @@ const INT={
 };
 
 /* ================= state ================= */
-const S={mode:'title',map:'world',badges:new Set(),visited:new Set(),seen:new Set(),intro:false,t0:0,music:true,zone:-1};
+const S={mode:'title',map:'world',badges:new Set(),visited:new Set(),seen:new Set(),intro:false,t0:0,music:true,zone:-1,
+  cyber:false,mirror:false,bloom:false,pets:0,dex:new Set(),fish:0,bumps:0,old:0};
 try{if(localStorage.getItem('jq_music')==='0')S.music=false;}catch(e){}
-function save(){try{localStorage.setItem('jq_save',JSON.stringify({b:[...S.badges],i:S.intro,s:[...S.seen]}));}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem('jq_save')||'null');if(d){(d.b||[]).forEach(b=>S.badges.add(b));(d.s||[]).forEach(b=>S.seen.add(b));S.intro=!!d.i;}}catch(e){}}
+function save(){try{localStorage.setItem('jq_save',JSON.stringify({b:[...S.badges],i:S.intro,s:[...S.seen],e:{c:+S.cyber,m:+S.mirror,f:+S.bloom,p:S.pets,d:[...S.dex]}}));}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('jq_save')||'null');if(d){(d.b||[]).forEach(b=>S.badges.add(b));(d.s||[]).forEach(b=>S.seen.add(b));S.intro=!!d.i;
+  const e=d.e||{};S.cyber=!!e.c;S.mirror=!!e.m;S.bloom=!!e.f;S.pets=e.p||0;(e.d||[]).forEach(x=>S.dex.add(x));}}catch(e){}}
 const ent=(o)=>({x:o.x,y:o.y,fx:o.x,fy:o.y,t:0,moving:false,dir:o.dir||'down',step:0,dur:.16,...o});
 const P=ent({x:8,y:16,dir:'down'});
 const C=ent({x:9,y:17,dir:'left',kind:'corgi'});
+const C2=ent({x:9,y:17,dir:'left',kind:'corgi'}); // the Mirror of Kalandra copy
 const MAPS={};
 
 function makeMap(id){
@@ -586,7 +612,8 @@ function makeMap(id){
   const SOL=id==='world'?'TwPL':'#';
   for(let y=0;y<M.h;y++)for(let x=0;x<M.w;x++)if(SOL.includes(M.grid[y][x]))M.solid[y][x]=true;
   for(const b of M.buildings)for(let y=b.y;y<b.y+b.h;y++)for(let x=b.x;x<b.x+b.w;x++)if(!(x===b.door&&y===b.y+b.h-1))M.solid[y][x]=true;
-  for(const o of M.objs)for(let y=o.y;y<o.y+o.h;y++)for(let x=o.x;x<o.x+o.w;x++){if(o.k!=='clock'){M.solid[y][x]=true;}M.objAt[y][x]=o;}
+  if(id==='world'&&S.mirror)M.objs.find(o=>o.k==='shard').gone=1;
+  for(const o of M.objs){if(o.gone)continue;for(let y=o.y;y<o.y+o.h;y++)for(let x=o.x;x<o.x+o.w;x++){if(o.k!=='clock'){M.solid[y][x]=true;}M.objAt[y][x]=o;}}
   M.layer=buildLayer(M);
   return M;
 }
@@ -725,13 +752,16 @@ function drawObj(g,o){
   case 'counter':R(g,X,Y+3,W,13,'#5a3f78');R(g,X,Y+3,W,3,'#8f6bb8');R(g,X+12,Y-1,12,6,'#1d1726');R(g,X+13,Y,10,4,'#5ff2ff');R(g,X+14,Y+1,4,1,'#1d1030');break;
   case 'sofa':R(g,X+1,Y+1,W-2,7,'#6a2f8f');R(g,X+1,Y+7,W-2,7,'#9a55c4');R(g,X+1,Y+7,W-2,1,'#b276de');R(g,X,Y+4,3,11,'#6a2f8f');R(g,X+W-3,Y+4,3,11,'#6a2f8f');R(g,X+16,Y+8,1,6,'#7b3fa0');R(g,X+32,Y+8,1,6,'#7b3fa0');break;
   case 'mic':R(g,X+7,Y+3,2,12,'#9aa0b5');R(g,X+4,Y+14,8,2,'#6b6f88');R(g,X+6,Y-1,4,5,'#3a3a4a');R(g,X+7,Y,1,1,'#aeb0c4');break;
+  case 'bush':for(const [dx,h,c] of [[1,10,'#2f7d45'],[4,13,'#3f9a4f'],[7,11,'#2f7d45'],[10,14,'#3f9a4f'],[13,9,'#2f7d45']]){R(g,X+dx,Y+16-h,3,h,c);R(g,X+dx+1,Y+16-h,1,1,'#9bd67f');}R(g,X,Y+13,16,3,'#276b3b');break;
+  case 'fishspot':R(g,X+3,Y+5,10,1,'#bfe3f5');R(g,X+3,Y+11,10,1,'#bfe3f5');R(g,X+2,Y+6,1,5,'#bfe3f5');R(g,X+13,Y+6,1,5,'#bfe3f5');R(g,X+7,Y+6,2,2,'#e76f7a');R(g,X+7,Y+8,2,2,'#fbf3e4');break;
+  case 'shard':R(g,X+7,Y+8,2,1,'#dfeefb');R(g,X+6,Y+9,4,2,'#9cc9e3');R(g,X+7,Y+11,2,1,'#6fa8dc');R(g,X+7,Y+9,1,1,'#ffffff');break;
   }
 }
 function buildLayer(M){
   const c=document.createElement('canvas');c.width=M.w*T;c.height=M.h*T;const g=c.getContext('2d');
   for(let y=0;y<M.h;y++)for(let x=0;x<M.w;x++)tile(g,M,x,y,M.grid[y][x]);
   for(const b of M.buildings)drawBuilding(g,b);
-  const os=[...M.objs].sort((a,b)=>a.y-b.y);for(const o of os)drawObj(g,o);
+  const os=M.objs.filter(o=>!o.gone).sort((a,b)=>a.y-b.y);for(const o of os)drawObj(g,o);
   return c;
 }
 
@@ -743,7 +773,11 @@ const mf=m=>440*Math.pow(2,(m-69)/12);
 const sfx={blip:()=>tone(900+Math.random()*80,.03,'square',.018),sel:()=>tone(660,.05,'square',.04),ok:()=>{tone(660,.06,'square',.04);tone(990,.08,'square',.04,.06);},
   bump:()=>tone(110,.08,'triangle',.08),door:()=>{tone(392,.07,'square',.035);tone(523,.09,'square',.035,.07);},
   badge:()=>{[72,76,79,84,79,84].forEach((m,i)=>tone(mf(m),.14,'square',.05,i*.1));},
-  sing:()=>{[67,69,71,74,72,71,69,67,69,74,79].forEach((m,i)=>tone(mf(m),.16,'triangle',.07,i*.16));}};
+  encounter:()=>{[60,64,67,72,67,72,76,79].forEach((m,i)=>tone(mf(m),.07,'square',.045,i*.05));},
+  hit:()=>{tone(180,.12,'sawtooth',.06);tone(90,.18,'square',.05,.05);},
+  cyber:()=>{[72,79,84,91,96].forEach((m,i)=>tone(mf(m),.09,'sawtooth',.035,i*.07));},
+  bloom:()=>{[72,76,79,83,84,88,91].forEach((m,i)=>tone(mf(m),.3,'triangle',.05,i*.12));},
+  drop:()=>{tone(mf(96),.5,'triangle',.06);tone(mf(91),.5,'triangle',.05,.08);tone(mf(84),.7,'square',.03,.16);}};
 const E8=60/104/2;
 const CHD={F:[53,57,60],C:[48,52,55],Dm:[50,53,57],Bb:[46,50,53],Gm:[43,46,50],Am:[45,48,52],C7:[48,52,58]};
 const SEC={
@@ -817,13 +851,12 @@ async function runSteps(steps){
     else if(st.badge)await giveBadge(st.badge);
     else if(st.panel){hideDialog();await openPanel(st.panel);}
     else if(st.choice){const i=await showChoice(st.n,st.q,st.choice);const br=st.then&&st.then[i];if(br&&br.length)await runSteps(br);}
-    else if(st.fn){await FN[st.fn]();}
+    else if(st.fn){await FN[st.fn](st.arg);}
   }
 }
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const FN={
   sleep:async()=>{hideDialog();fade(true);sfx.door();await wait(700);save();fade(false);await wait(250);},
-  sing:async()=>{hideDialog();sfx.sing();await wait(1900);},
 };
 async function giveBadge(id){
   if(S.badges.has(id))return;
@@ -1034,7 +1067,6 @@ function renderPanel(){
   requestAnimationFrame(f);
 }
 const ILS={
-  'home:5,1':[nar('窗外是一顆好大的月亮。','A huge moon hangs outside the window.'),panel('ill:moon'),say('corgi','……那隻柯基，該不會是我吧？','...wait. Is that corgi me?')],
   'home:1,2':[nar('電視上跑著一款像素 RPG。','A pixel RPG is running on the TV.'),panel('ill:rpg')],
   'home:8,2':[nar('螢幕上開著 Path of Exile。','Path of Exile is open on the screen.'),panel('ill:loot')],
   'ntust:2,1':[nar('一張阿爾卑斯山的海報。','A poster of the Alps.'),panel('ill:alps')],
@@ -1154,6 +1186,7 @@ function resetProgress(){
   S.badges.clear();S.seen.clear();S.visited.clear();S.intro=false;S.t0=0;save();
   for(const k of Object.keys(MAPS))delete MAPS[k];MAPS.world=makeMap('world');S.map='world';
   Object.assign(P,{x:8,y:16,fx:8,fy:16,moving:false,t:0,dir:'down',walking:false});Object.assign(C,{x:9,y:17,fx:9,fy:17,moving:false,t:0,dir:'left'});
+  Object.assign(S,{cyber:false,mirror:false,bloom:false,pets:0,fish:0,bumps:0,old:0});S.dex.clear();Object.assign(C2,{x:9,y:17,fx:9,fy:17,moving:false,t:0});BLOOM=null;save();
   updateHUD();
 }
 
@@ -1172,7 +1205,7 @@ function blocked(M,x,y,self){
   if(M.solid[y][x])return true;
   if(npcAt(M,x,y,self))return true;
   if(self!==P&&((P.x===x&&P.y===y)||(P.fx===x&&P.fy===y)))return true;
-  if(self!==P&&self!==C&&((C.x===x&&C.y===y)||isWarp(M,x,y)))return true;
+  if(self!==P&&self!==C&&self!==C2&&((C.x===x&&C.y===y)||(S.mirror&&C2.x===x&&C2.y===y)||isWarp(M,x,y)))return true;
   return false;
 }
 function isWarp(M,x,y){if(M.id==='world')return M.buildings.some(b=>b.door===x&&b.y+b.h-1===y);return M.grid[y][x]==='D';}
@@ -1180,10 +1213,13 @@ function startMove(e,d,dur){const[dx,dy]=DV[d];e.fx=e.x;e.fy=e.y;e.x+=dx;e.y+=dy
 let bumpT=0;
 function tryStep(d){
   const M=cur();const[dx,dy]=DV[d];const nx=P.x+dx,ny=P.y+dy;P.dir=d;
-  if(blocked(M,nx,ny,P)){if(bumpT<=0){sfx.bump();bumpT=.35;}return;}
-  const ox=P.x,oy=P.y;const dur=running()?.09:.16;startMove(P,d,dur);
+  if(blocked(M,nx,ny,P)){if(bumpT<=0){sfx.bump();bumpT=.35;S.bumps++;bumpTalk();}return;}
+  const ox=P.x,oy=P.y,cox=C.x,coy=C.y;const dur=running()?.09:.16;startMove(P,d,dur);
   // corgi follows into the player's previous tile
   if(C.x!==ox||C.y!==oy){const cdx=ox-C.x,cdy=oy-C.y;if(Math.abs(cdx)+Math.abs(cdy)===1){startMove(C,cdx>0?'right':cdx<0?'left':cdy>0?'down':'up',dur);}else{C.x=C.fx=ox;C.y=C.fy=oy;}}
+  // ...and the mirrored corgi follows the first one
+  if(S.mirror&&(C.x!==cox||C.y!==coy)&&(C2.x!==cox||C2.y!==coy)){const ddx=cox-C2.x,ddy=coy-C2.y;
+    if(Math.abs(ddx)+Math.abs(ddy)===1)startMove(C2,ddx>0?'right':ddx<0?'left':ddy>0?'down':'up',dur);else{C2.x=C2.fx=cox;C2.y=C2.fy=coy;C2.moving=false;}}
 }
 function advance(e,dt){if(!e.moving)return false;e.t+=dt/e.dur;if(e.t>=1){e.t=0;e.moving=false;e.fx=e.x;e.fy=e.y;return true;}return false;}
 let fading=false;
@@ -1193,6 +1229,7 @@ async function warp(to,px,py,dir){
   S.map=to;if(!MAPS[to])MAPS[to]=makeMap(to);
   P.x=P.fx=px;P.y=P.fy=py;P.dir=dir;P.moving=false;
   const back=DV[OPP[dir]];C.x=C.fx=px+back[0];C.y=C.fy=py+back[1];C.moving=false;
+  C2.x=C2.fx=C.x;C2.y=C2.fy=C.y;C2.moving=false;
   if(to==='world'){S.zone=-1;checkZone();}else{S.visited.add(to);S.zone=0;showLoc(INAME[to]);}
   fade(false);await wait(reduced?0:120);fading=false;
 }
@@ -1202,11 +1239,12 @@ function onArrive(){
   else if(M.grid[P.y][P.x]==='D'){const b=BUILDINGS.find(b=>b.id===M.id);warp('world',b.door,b.y+b.h,'down');}
 }
 function checkZone(){const z=ZONES.findIndex(z=>P.x<z.x1);if(z!==S.zone){S.zone=z;showLoc(ZONES[z].n);}}
-const KN={tv:Z('電視','TV'),pc:Z('電腦','Computer'),bookshelf:Z('書櫃','Bookshelf'),window:Z('窗戶','Window'),mirror:Z('鏡子','Mirror'),bed:Z('床','Bed'),table:Z('桌子','Table'),globe:Z('地球儀','Globe'),plant:Z('盆栽','Plant'),blackboard:Z('黑板','Blackboard'),poster:Z('海報','Poster'),diploma:Z('畢業證書','Diplomas'),desk:Z('課桌','Desk'),whiteboard:Z('白板','Whiteboard'),binders:Z('文件櫃','Binders'),screen:Z('大螢幕','Big screen'),phone:Z('手機展示台','Phone display'),abboard:Z('A/B 白板','A/B board'),server:Z('伺服器','Servers'),scroll:Z('卷軸','Scroll'),banner:Z('掛軸','Hanging scroll'),flag:Z('導遊旗','Tour flag'),rack:Z('行程 DM','Brochures'),mapwall:Z('地圖','Map'),counter:Z('櫃檯','Counter'),sofa:Z('沙發','Sofa'),mic:Z('麥克風','Microphone'),sign:Z('告示牌','Sign'),bench:Z('長椅','Bench'),bike:Z('機車','Scooter'),cart:Z('咖啡攤','Coffee cart'),stall:Z('水果攤','Fruit stall'),gate:Z('NEXT STAGE 大門','NEXT STAGE gate')};
+const KN={tv:Z('電視','TV'),pc:Z('電腦','Computer'),bookshelf:Z('書櫃','Bookshelf'),window:Z('窗戶','Window'),mirror:Z('鏡子','Mirror'),bed:Z('床','Bed'),table:Z('桌子','Table'),globe:Z('地球儀','Globe'),plant:Z('盆栽','Plant'),blackboard:Z('黑板','Blackboard'),poster:Z('海報','Poster'),diploma:Z('畢業證書','Diplomas'),desk:Z('課桌','Desk'),whiteboard:Z('白板','Whiteboard'),binders:Z('文件櫃','Binders'),screen:Z('大螢幕','Big screen'),phone:Z('手機展示台','Phone display'),abboard:Z('A/B 白板','A/B board'),server:Z('伺服器','Servers'),scroll:Z('卷軸','Scroll'),banner:Z('掛軸','Hanging scroll'),flag:Z('導遊旗','Tour flag'),rack:Z('行程 DM','Brochures'),mapwall:Z('地圖','Map'),counter:Z('櫃檯','Counter'),sofa:Z('沙發','Sofa'),mic:Z('麥克風','Microphone'),sign:Z('告示牌','Sign'),bench:Z('長椅','Bench'),bike:Z('機車','Scooter'),cart:Z('咖啡攤','Coffee cart'),stall:Z('水果攤','Fruit stall'),gate:Z('NEXT STAGE 大門','NEXT STAGE gate'),bush:Z('草叢','Tall grass'),pond:Z('池塘','Pond'),fishspot:Z('釣魚點','Fishing spot'),shard:Z('發光的東西','Something shiny')};
 const TOPOFF={tv:-4,pc:-6,bookshelf:-8,binders:-6,phone:-6,abboard:-6,server:-4,flag:-6,cart:-8,stall:-8,gate:-12};
 function facing(){
   const M=cur();const[dx,dy]=DV[P.dir];const fx=P.x+dx,fy=P.y+dy;
   if(C.x===fx&&C.y===fy&&!C.moving)return{kind:'corgi'};
+  if(S.mirror&&C2.x===fx&&C2.y===fy&&!C2.moving)return{kind:'corgi',e:C2};
   const n=M.npcs.find(n=>n.x===fx&&n.y===fy);if(n)return{kind:'npc',n};
   if(fx>=0&&fy>=0&&fx<M.w&&fy<M.h){const o=M.objAt[fy][fx];if(o&&o.s)return{kind:'obj',o};}
   return null;
@@ -1236,11 +1274,16 @@ function brackets(x,y,w,h,now){const p=Math.floor(now/260)%2;x-=2+p;y-=2+p;w+=4+
   for(const [c,o] of [['#1d1726',1],['#ffffff',0]]){const X=x+o,Y=y+o;
     R(ctx,X,Y,5,1,c);R(ctx,X,Y,1,5,c);R(ctx,X+w-5,Y,5,1,c);R(ctx,X+w-1,Y,1,5,c);
     R(ctx,X,Y+h-1,5,1,c);R(ctx,X,Y+h-5,1,5,c);R(ctx,X+w-5,Y+h-1,5,1,c);R(ctx,X+w-1,Y+h-5,1,5,c);}}
-function resolveScript(s){if(s==='gate')return gateScript();if(s==='keeper')return keeperScript();return s;}
+function resolveScript(s){return typeof s==='string'?SCRIPTS[s]():s;}
 function corgiTalk(){
+  S.pets++;save();
   const next=BADGES.find(b=>!S.badges.has(b.id));
-  if(!next)return[say('corgi','汪！徽章全拿到了。往最東邊的大門走吧！','Woof! You have every badge. Head for the gate in the far east!')];
-  return[nar('（你摸了摸柯基。牠很滿意。）','(You pet the corgi. It approves.)'),say('corgi',`下一站推薦：${next.where.zh}。那裡有「${next.n.zh}」。`,`Try ${next.where.en} next. The ${next.n.en} is waiting there.`)];
+  const tip=next?say('corgi',`下一站推薦：${next.where.zh}。那裡有「${next.n.zh}」。`,`Try ${next.where.en} next. The ${next.n.en} is waiting there.`)
+    :say('corgi','汪！徽章全拿到了。往最東邊的大門走吧！','Woof! You have every badge. Head for the gate in the far east!');
+  if(S.cyber)return[nar('（你摸了摸賽博柯基。牠的尾巴閃著霓虹光。）','(You pet the cyber corgi. Its tail glows neon.)'),tip];
+  if(S.pets>=10)return[nar('（你摸了摸柯基。這已經是第 10 次了。）','(You pet the corgi. That’s the 10th time.)'),nar('柯基全身開始發光……','The corgi starts to glow...'),{fn:'cyber'}];
+  if(S.pets===5)return[nar('（你摸了摸柯基。）','(You pet the corgi.)'),say('corgi','……再摸下去，我好像會變身。','...Keep petting me and I might transform.')];
+  return next?[nar('（你摸了摸柯基。牠很滿意。）','(You pet the corgi. It approves.)'),tip]:[tip];
 }
 function keeperScript(){const k=S.badges.size;
   if(k>=7)return[say('keeper','7 枚徽章都到齊了！大門就在我右手邊，去吧。','All 7 badges! The gate is right beside me. Go on.')];
@@ -1301,8 +1344,187 @@ function renderEnding(now){
   for(let x=JX+5*k,i=0;x>0;x-=seg,i++){const off=(i+ph)%2?k:0;cols.forEach((c,j)=>R(ctx,x-seg,top+j*sh+off,seg,sh,c));}
   const fi=Math.floor(t/140)%2;
   ctx.drawImage(SPR.jeff.right[fi],JX,JY,16*k,16*k);
-  ctx.drawImage(CORGI.right[fi],CX,CY,16*k,16*k);
+  const cset=S.cyber?CORGI_CY:CORGI;
+  ctx.drawImage(cset.right[fi],CX,CY,16*k,16*k);
+  if(S.mirror)ctx.drawImage(cset.right[1-fi],CX+15*k,Math.round(cy-6*k+Math.sin(t/300+2.6)*2),16*k,16*k);
 }
+
+/* ================= easter eggs ================= */
+async function flash(n){const f=$('#fade');f.classList.add('flash');for(let i=0;i<n;i++){fade(true);await wait(reduced?0:70);fade(false);await wait(reduced?0:90);}f.classList.remove('flash');}
+const SCRIPTS={gate:()=>gateScript(),keeper:()=>keeperScript(),window:windowScript,oldman:oldmanScript,pond:pondScript,mic:micScript,
+  bush:()=>[nar('草叢沙沙作響……','The tall grass rustles...'),{fn:'battle'}],
+  fish:()=>[nar('你甩出釣竿，靜靜等待……','You cast the line and wait...'),{fn:'fish'}],
+  shard:()=>[nar('沙地的角落，有東西閃了一下……','Something glints in the corner of the sand...'),{fn:'drop'},
+    nar('【傳奇掉落】卡蘭德的魔鏡','[Legendary drop] Mirror of Kalandra'),
+    nar('Path of Exile 裡最稀有的物品之一，能把任何東西完整地複製一份。','One of the rarest items in Path of Exile. It makes a perfect copy of anything.'),
+    nar('你把魔鏡對準了柯基……','You point the mirror at the corgi...'),{fn:'mirror'}]};
+
+// 1 · cyber corgi: pet it 10 times, or check the home window with all 7 badges
+function windowScript(){
+  const base=[nar('窗外是一顆好大的月亮。','A huge moon hangs outside the window.'),panel('ill:moon')];
+  if(S.cyber)return[...base,say('corgi','……果然是我。嗶嗶。','...Yep, that’s me. Beep boop.')];
+  const q=say('corgi','……那隻柯基，該不會是我吧？','...wait. Is that corgi me?');
+  if(S.badges.size>=7)return[...base,q,nar('窗外的星空突然閃了一下。','The stars outside suddenly flicker.'),say('corgi','等等……我好像想起來了。','Wait... I think I remember now.'),{fn:'cyber'}];
+  return[...base,q];
+}
+FN.cyber=async()=>{hideDialog();sfx.cyber();await flash(3);S.cyber=true;save();
+  await showLine('corgi',Z('賽博柯基，上線！嗶嗶。','Cyber Corgi, online! Beep boop.'));
+  await showLine('corgi',Z('放心，還是一樣可以摸。','Don’t worry. Still pettable.'));};
+
+// 2 · wild data monsters in the tall grass
+const MONS=[
+  {id:'null',n:Z('NULL 值','NULL Value'),g:'NULL',c:'#9aa0b5',intro:Z('它讓欄位裡一半的資料憑空消失了！','It made half the column vanish into thin air!'),moves:[
+    {n:Z('假裝沒看到','Ignore it'),t:Z('NULL 值在報表裡繁殖了，平均數開始說謊。','The NULLs multiplied. The averages started lying.')},
+    {n:Z('查原因再 COALESCE 補值','Find the cause, then COALESCE'),ok:1,t:Z('先搞清楚為什麼缺，再用合理的值補上。','Found out why it was missing, then filled it with a sensible value.')},
+    {n:Z('整欄 DROP 掉','DROP the column'),t:Z('問題解決了……連同整個欄位一起。','Problem solved... along with the entire column.')}]},
+  {id:'outlier',n:Z('離群值','Outlier'),g:'9999',c:'#e76f7a',intro:Z('它把平均數拉到了外太空！','It dragged the average into outer space!'),moves:[
+    {n:Z('直接刪掉','Just delete it'),t:Z('刪掉之後才發現，那是你最大的客戶。','After deleting it, you realize it was your biggest customer.')},
+    {n:Z('先查是不是輸入錯誤','Check for entry errors'),ok:1,t:Z('原來是有人多打了兩個 9。修正後，平均數回到地球。','Someone typed two extra 9s. Fixed. The average is back on Earth.')},
+    {n:Z('繼續用平均數','Keep using the mean'),t:Z('平均數被拉得更遠了。','The mean drifts even further away.')}]},
+  {id:'dup',n:Z('重複資料','Duplicate Row'),g:'X2',c:'#6fa8dc',intro:Z('每筆訂單都被算了兩次，營收看起來翻倍了！','Every order got counted twice. Revenue looks doubled!'),moves:[
+    {n:Z('開香檳慶祝','Pop the champagne'),t:Z('老闆很開心，直到財務來對帳。','The boss was thrilled. Until finance reconciled the books.')},
+    {n:Z('一筆一筆手動刪','Delete them by hand'),t:Z('刪了三小時，還剩十二萬筆。','Three hours in. 120,000 rows to go.')},
+    {n:Z('ROW_NUMBER() 去重','ROW_NUMBER() dedupe'),ok:1,t:Z('按主鍵分組，每組只留第一筆。營收回到真實數字。','Partitioned by key, kept the first row of each. Revenue is real again.')}]},
+  {id:'leak',n:Z('資料洩漏','Data Leakage'),g:'99.9%',c:'#b07cf0',intro:Z('它讓模型準確率衝到了 99.9%！','It pushed model accuracy to 99.9%!'),moves:[
+    {n:Z('重新切分訓練和測試集','Re-split train and test'),ok:1,t:Z('拿掉偷看答案的欄位，準確率回到誠實的 82%。','Removed the feature that peeked at the answer. Accuracy: an honest 82%.')},
+    {n:Z('馬上跟老闆報告','Tell the boss right away'),t:Z('上線第一週，準確率掉到 52%。','Week one in production: 52% accuracy.')},
+    {n:Z('再多加幾個特徵','Add more features'),t:Z('準確率變成 100%。這通常不是好消息。','Accuracy hits 100%. That is rarely good news.')}]},
+  {id:'date',n:Z('髒日期','Messy Date'),g:'13/32',c:'#f2c14e',intro:Z('它堅持今天是 13 月 32 日！','It insists today is the 32nd day of month 13!'),moves:[
+    {n:Z('統一轉成 ISO 格式','Normalize to ISO 8601'),ok:1,t:Z('全部轉成 YYYY-MM-DD，對不上的另外標記。世界恢復秩序。','Everything is YYYY-MM-DD now, and the bad rows are flagged. Order restored.')},
+    {n:Z('用 Excel 打開看看','Open it in Excel'),t:Z('Excel 把一半的日期變成數字，另一半變成了 1900 年。','Excel turned half the dates into numbers and the rest into 1900.')},
+    {n:Z('用肉眼一筆一筆看','Eyeball every row'),t:Z('看到第 3,000 筆，你開始懷疑今天到底是幾號。','By row 3,000 you start doubting what day it is.')}]},
+];
+const BLOB=["......oooo......","....oobbbboo....","...obhhbbbbbo...","..obhbbbbbbbbo..","..obbwwbbwwbbo..",".obbbwebbwebbbo.",".obbbbbbbbbbbbo.","obbbbbbmmbbbbbbo","obbbbbbbbbbbbbbo","obbbbbbbbbbbbbbo",".oobbbbbbbbbboo.","...oooooooooo..."];
+const MON_SPR={};const monSpr=m=>MON_SPR[m.id]||(MON_SPR[m.id]=mk(BLOB,{o:'#1d1726',b:m.c,h:'rgba(255,255,255,.45)',w:'#ffffff',e:'#1d1726',m:'#1d1726'}));
+let BT=null;const btEl=$('#battle');
+function btHud(){$('#bMonName').textContent=tx(BT.m.n);for(const[id,v]of[['#bMonHp',BT.hp],['#bMeHp',BT.me]]){const el=$(id);el.style.width=Math.round(v*100)+'%';el.classList.toggle('low',v<.35);}}
+FN.battle=async()=>{
+  hideDialog();const m=MONS[(Math.random()*MONS.length)|0];sfx.encounter();await flash(3);
+  BT={m,t0:performance.now(),hp:1,me:1};btHud();btEl.hidden=false;$('#hud').hidden=true;
+  await showLine(null,Z(`野生的「${m.n.zh}」跳出來了！`,`A wild ${m.n.en} appeared!`));
+  await showLine(null,m.intro);
+  const opts=[...m.moves.map(x=>x.n),Z('逃跑','Run')];
+  for(;;){
+    const i=await showChoice(null,Z('Jeff 要怎麼做？','What will Jeff do?'),opts);
+    if(i===m.moves.length){await showLine(null,Z('順利逃走了！……資料還是髒的就是了。','Got away safely! The data’s still dirty, though.'));break;}
+    const mv=m.moves[i];await showLine(null,Z(`Jeff 使出了「${mv.n.zh}」！`,`Jeff used ${mv.n.en}!`));
+    if(mv.ok){
+      BT.hit=performance.now();BT.hp=0;btHud();sfx.hit();
+      await showLine(null,Z('效果絕佳！','It’s super effective!'));await showLine(null,mv.t);
+      const isNew=!S.dex.has(m.id);S.dex.add(m.id);save();sfx.badge();
+      await showLine(null,Z(`「${m.n.zh}」被清理乾淨了！Jeff 獲得了 ${80+((Math.random()*80)|0)} EXP。`,`The ${m.n.en} was cleaned up! Jeff gained ${80+((Math.random()*80)|0)} EXP.`));
+      if(isNew&&S.dex.size===MONS.length)await showLine('corgi',Z(`汪！${MONS.length} 種資料怪獸全部清理過了。你是資料清理大師！`,`Woof! You’ve cleaned up all ${MONS.length} kinds of data monsters. Data-cleaning master!`));
+      break;}
+    BT.ouch=performance.now();BT.me=Math.max(.1,BT.me-.3);btHud();sfx.bump();
+    await showLine(null,Z('效果不太好……','It’s not very effective...'));await showLine(null,mv.t);
+  }
+  hideDialog();await flash(1);BT=null;btEl.hidden=true;$('#hud').hidden=false;
+};
+function plat(x,y,rx,ry){for(let dy=-ry;dy<=ry;dy++){const w=Math.round(rx*Math.sqrt(1-(dy/ry)**2));R(ctx,x-w,y+dy,w*2,1,dy>ry*.4?'#6fae55':'#9cd07a');}}
+function renderBattle(now){
+  const t=now-BT.t0;let H=CH_;if(!dlg.hidden){const r=dlg.getBoundingClientRect();H=Math.min(CH_,Math.floor(r.top/SCALE));}
+  const k=Math.max(1,Math.min(4,Math.floor(Math.min(CW/100,H/70))));
+  R(ctx,0,0,CW,CH_,'#f4efe3');for(let y=0;y<CH_;y+=6)R(ctx,0,y,CW,1,'#ebe3cc');
+  const mx=Math.round(CW*.7),my=Math.round(H*.42),jx=Math.round(CW*.28),jy=Math.round(H*.92);
+  plat(mx,my,22*k,5*k);plat(jx,jy,24*k,5*k);
+  const mk2=k+1;let mY=my-11*mk2+Math.round(Math.sin(t/260)*k),vis=true;
+  if(BT.hit){const h=now-BT.hit;if(h<600)vis=Math.floor(h/80)%2===0;else mY+=Math.round((h-600)*.06*k);}
+  if(vis){ctx.save();ctx.beginPath();ctx.rect(0,0,CW,my+2);ctx.clip();ctx.drawImage(monSpr(BT.m),mx-8*mk2,mY,16*mk2,12*mk2);
+    ptext(ctx,BT.m.g,mx-ptw(BT.m.g,k)/2,mY-8*k,'#1d1726',k);ctx.restore();}
+  const jo=BT.ouch&&now-BT.ouch<400?Math.round(Math.sin((now-BT.ouch)/25)*2*k):0;
+  ctx.drawImage(SPR.jeff.up[0],jx-8*k+jo,jy-15*k,16*k,16*k);
+  ctx.drawImage((S.cyber?CORGI_CY:CORGI).right[Math.floor(t/400)%2],jx+7*k,jy-12*k,16*k,16*k);
+}
+
+// 3 · Mirror of Kalandra: a legendary drop that copies the corgi
+let LOOT=null;
+FN.drop=async()=>{hideDialog();const o=MAPS.world.objs.find(o=>o.k==='shard');LOOT={x:o.x,y:o.y,t0:performance.now()};sfx.drop();await wait(reduced?300:1800);};
+FN.mirror=async()=>{hideDialog();sfx.cyber();await flash(2);LOOT=null;
+  const M=MAPS.world,o=M.objs.find(o=>o.k==='shard');o.gone=1;M.solid[o.y][o.x]=false;M.objAt[o.y][o.x]=null;M.layer=buildLayer(M);
+  S.mirror=true;save();Object.assign(C2,{x:C.x,y:C.y,fx:C.x,fy:C.y,dir:C.dir,moving:false});
+  await showLine('corgi',Z('汪？','Woof?'));await showLine('corgi',Z('汪！','Woof!'));
+  await showLine(null,Z('柯基變成兩隻了。','Now there are two corgis.'));};
+function drawLoot(now,cx,cy){
+  const gx=LOOT.x*T-cx+8,gy=LOOT.y*T-cy+10,el=now-LOOT.t0,h=Math.min(gy,Math.round(el*.5)),w=el<400?1:2+Math.round(Math.sin(now/120)+1);
+  ctx.fillStyle='rgba(214,40,40,.45)';ctx.fillRect(gx-w,gy-h,w*2+1,h);R(ctx,gx,gy-h,1,h,'#ffd6d6');
+  if(el>500){const s='MIRROR OF KALANDRA',tw=ptw(s),bx=gx-((tw+4)>>1),by=gy-28;R(ctx,bx-1,by-1,tw+6,11,'#d62828');R(ctx,bx,by,tw+4,9,'#ffffff');ptext(ctx,s,bx+2,by+2,'#d62828');}
+}
+
+// 4 · the flower-field spell at the pond
+let BLOOM=null;
+function bloomTiles(){const M=MAPS.world,out=[];for(let y=20;y<30;y++)for(let x=2;x<15;x++){if(M.solid[y][x]||!'gGf'.includes(M.grid[y][x]))continue;const d=Math.hypot(x-8,(y-24.5)*1.2);if(d<=6.5)out.push({x,y,d});}return out.sort((a,b)=>a.d-b.d);}
+function pondScript(){
+  if(S.bloom)return[nar('池塘邊開滿了花。風一吹，花瓣輕輕晃動。','Flowers line the pond, swaying in the breeze.')];
+  return[nar('池面映著藍天，很安靜。','The pond reflects the sky. It’s very quiet.'),
+    nar('你想起某位精靈魔法使最喜歡的魔法：變出一片花田的魔法。','You remember a certain elf mage’s favorite spell: one that makes a field of flowers bloom.'),
+    choice(null,Z('要試著唸唸看嗎？','Try casting it?'),[Z('唸咒語','Cast it'),Z('算了','Never mind')],[[{fn:'bloom'},
+      nar('池塘邊開滿了花。沒什麼實際用途，但很漂亮。','Flowers bloom all around the pond. Not very useful, but beautiful.'),
+      say('corgi','……魔法本來就不一定要有用吧。','...Magic doesn’t have to be useful, I guess.')],[]])];
+}
+FN.bloom=async()=>{hideDialog();sfx.bloom();S.bloom=true;save();BLOOM={t0:performance.now(),tiles:bloomTiles()};await wait(reduced?0:1500);};
+function drawBloom(now,cx,cy){
+  if(!BLOOM)BLOOM={t0:-1e9,tiles:bloomTiles()};const el=now-BLOOM.t0,cols=['#fbf3e4','#f2c14e','#e76f7a','#b8a4f0','#ff9ccc'];
+  for(const b of BLOOM.tiles){const age=el-b.d*110;if(age<0)continue;const X=b.x*T-cx,Y=b.y*T-cy;if(X<-16||Y<-16||X>CW||Y>CH_)continue;
+    for(let i=0;i<3;i++){const fx=X+2+((hash(b.x,b.y,70+i)*11)|0),fy=Y+2+((hash(b.x,b.y,80+i)*11)|0),c=cols[(hash(b.x,b.y,90+i)*5)|0];
+      if(age<150){R(ctx,fx,fy,1,2,'#4f9448');continue;}R(ctx,fx,fy-1,1,1,c);R(ctx,fx-1,fy,3,1,c);R(ctx,fx,fy+1,1,1,c);R(ctx,fx,fy,1,1,'#f2c14e');}}
+}
+
+// 5 · KTV: original 8-bit takes on real song titles
+const SONGS=[{n:Z('ZUTOMAYO〈秒針を噛む〉','ZUTOMAYO – Byoushin wo Kamu'),bpm:150,root:62,seed:1},{n:Z('ZUTOMAYO〈残機〉','ZUTOMAYO – Zanki'),bpm:168,root:57,seed:2},
+  {n:Z('NewJeans〈Hype Boy〉','NewJeans – Hype Boy'),bpm:112,root:64,seed:3},{n:Z('NewJeans〈Ditto〉','NewJeans – Ditto'),bpm:134,root:61,seed:4}];
+let SING=null;
+function micScript(){return[choice(null,Z('要點哪首歌？','Pick a song:'),[...SONGS.map(s=>s.n),Z('下次吧','Maybe later')],
+  [...SONGS.map((s,i)=>[{fn:'sing',arg:i}]),[nar('麥克風看起來有點失望。','The microphone looks a little disappointed.')]])];}
+function playJingle(s){const deg=[0,2,4,7,9,12,14,16],e=60/s.bpm/2,len=24;let t=0,i=0,j=3;
+  for(let bar=0;bar<3;bar++){tone(mf(s.root-12),e*3.5,'triangle',.08,bar*8*e);tone(mf(s.root-5),e*3,'triangle',.06,(bar*8+4)*e);}
+  while(t<len){const r=hash(i,s.seed,7);j=Math.max(0,Math.min(deg.length-1,j+(r<.35?-1:r<.7?1:r<.85?2:-2)));const d=hash(i,s.seed,8)<.7?1:2;tone(mf(s.root+deg[j]),e*d*.9,'square',.04,t*e);t+=d;i++;}
+  return len*e;}
+FN.sing=async i=>{hideDialog();const s=SONGS[i],was=S.music;if(was)setMusic(false);
+  toast(Z(`♪ 正在播放：${s.n.zh}`,`♪ Now playing: ${s.n.en}`));const d=playJingle(s);SING={end:performance.now()+d*1000};
+  await wait(d*1000+300);SING=null;if(was)setMusic(true);
+  const sc=70+((Math.random()*31)|0);sfx.ok();
+  await showLine(null,Z(`（這台 KTV 的伴奏只有 8-bit 版，旋律好像也跟原曲完全不一樣。）\n評分：${sc} 分！`,`(This KTV only has 8-bit backing tracks, and the melody sounds nothing like the original.)\nScore: ${sc}!`));
+  await showLine('corgi',sc===100?Z('滿分！汪汪汪！（柯基激動到在沙發上打滾。）','PERFECT! Woof woof woof! (The corgi rolls around on the sofa.)')
+    :sc>=90?Z('汪！（柯基跟著搖尾巴打拍子。）','Woof! (The corgi wags along to the beat.)'):Z('汪。（柯基很有禮貌地拍了拍手。）','Woof. (The corgi claps politely.)'));};
+function drawStageLights(now,M,cx,cy){ctx.fillStyle='rgba(10,5,25,.35)';ctx.fillRect(0,0,CW,CH_);
+  ['rgba(255,95,162,.28)','rgba(95,242,255,.25)','rgba(242,193,78,.25)'].forEach((c,i)=>{const a=now/700+i*2.1;
+    disc(ctx,Math.round(M.w*T/2-cx+Math.cos(a)*50),Math.round(M.h*T/2-cy+Math.sin(a*1.3)*28),14,c);});}
+
+// 6 · fishing for p-values
+FN.fish=async()=>{hideDialog();await wait(reduced?0:900);sfx.ok();S.fish++;const r=Math.random();let line;
+  if(r<.1)line=Z('釣到了一隻「型一錯誤」！看起來很顯著，其實什麼都不是。','You caught a Type I error! It looks significant, but it’s nothing.');
+  else{const p=r<.25?Math.random()*.001:r<.45?.001+Math.random()*.047:r<.58?.049:r<.75?.05+Math.random()*.05:.1+Math.random()*.85,ps=p<.001?p.toFixed(4):p.toFixed(3);
+    line=p<.001?Z(`釣到一條 p = ${ps} 的大魚！非常顯著！……但效果量只有 0.01。`,`A p = ${ps} monster! Hugely significant! ...Effect size: 0.01.`)
+      :p<.049?Z(`釣到 p = ${ps}！顯著，可以寫進報告了。`,`p = ${ps}! Significant. Into the report it goes.`)
+      :p===.049?Z('p = 0.049！驚險過關！……要不要再多釣幾次確認一下？','p = 0.049! Just made it! ...Want to fish a few more times, just to be sure?')
+      :p<.1?Z(`p = ${ps}，差一點點。旁邊的釣客小聲說：「要不要換個檢定方法試試？」`,`p = ${ps}. So close. The fisher whispers, "Maybe try a different test?"`)
+      :Z(`p = ${ps}……跟隨機沒兩樣。把牠放回河裡吧。`,`p = ${ps}... indistinguishable from chance. Let it go.`);}
+  await showLine(null,line);
+  if(S.fish===5)await showLine(null,Z('（你已經釣了 5 次。多重比較的問題正悄悄靠近。）','(That’s 5 casts. The multiple comparisons problem is creeping closer.)'));
+  if(S.fish===10)await showLine(null,Z('（第 10 次了。每次都用 0.05 當門檻的話，至少釣到一條假顯著的機率已經超過 40%。）','(Cast number 10. At a 0.05 threshold each time, the odds of at least one false positive are now over 40%.)'));};
+
+// 7 · the old man's secret
+function oldmanScript(){const n=++S.old;
+  if(n===1)return[say('oldman','別急著往東衝。每棟房子都進得去，裡面的東西大多能調查。',"Don't rush east. Every building has a door, and most things inside can be inspected."),
+    say('oldman',isTouch?'走累了就按住 B 跑步。':'走累了就按住 Shift 跑步。',isTouch?'Tired? Hold B to run.':'Tired? Hold Shift to run.')];
+  if(n===2)return[say('oldman','又是你啊。每棟房子都進去看過了嗎？','You again. Been inside every building yet?')];
+  if(n===3)return[say('oldman','……你身邊那隻柯基，看起來好眼熟。','...That corgi of yours looks awfully familiar.')];
+  if(n===4)return[say('oldman','我年輕的時候也養過一隻柯基。牠也很愛跟在人後面跑。','I had a corgi when I was young. It loved following people around too.')];
+  if(n===5)return[say('oldman','……好吧，被你發現了。','...Fine. You got me.'),say('futurejeff','我其實是從未來回來的 Jeff。','I’m actually Jeff, back from the future.'),
+    say('futurejeff','未來的事不能說太多。只能告訴你：多喝水、記得存檔、柯基要好好照顧。','I can’t say much about the future. Just: drink water, save often, and take good care of the corgi.'),
+    say('corgi','……難怪你身上有我的味道。','...That explains why you smell like me.')];
+  const tips=[Z('遇到 NULL 值，先查為什麼缺，再決定怎麼補。','When you meet a NULL, find out why it’s missing before you fill it.'),
+    Z('報告寫短一點。高層真的只看第一頁。','Keep reports short. Execs really do only read page one.'),
+    Z('柯基後來……算了，這是劇透。','The corgi later... never mind. Spoilers.'),
+    Z('p = 0.049 的時候，先別急著開心。','When you see p = 0.049, hold the celebration.')];
+  return[say('futurejeff',tips[(n-6)%tips.length].zh,tips[(n-6)%tips.length].en)];
+}
+
+// 8 · wall-bump statistics
+function bumpTalk(){const L={20:Z('你已經撞牆 20 次了。這個樣本數，差不多可以做檢定了。','That’s 20 wall bumps. Big enough sample for a test, probably.'),
+  50:Z('撞牆 50 次。結論：牆壁顯著地存在（p < 0.001）。','50 bumps. Conclusion: the wall significantly exists (p < 0.001).'),
+  100:Z('100 次了……你是在幫這面牆做壓力測試嗎？','100 times... Are you stress-testing this wall?')}[S.bumps];
+  if(L)setTimeout(()=>run([say('corgi',L.zh,L.en)]),150);}
 function running(){return keys.has('ShiftLeft')||keys.has('ShiftRight')||padB;}
 
 /* ================= input ================= */
@@ -1398,12 +1620,14 @@ function drawChar(e,spr,cx,cy){
   const fr=spr[e.dir]||spr.down;let i=0;if(e.moving)i=e.t<.5?(e.step%2?1:3):0;
   ctx.drawImage(fr[i],X,Y-4);
 }
-function drawCorgi(cx,cy){const[px,py]=epos(C);const X=px-cx,Y=py-cy;ctx.fillStyle='rgba(20,15,30,.28)';ctx.fillRect(X+3,Y+13,11,2);
-  const d=C.dir==='left'?'left':C.dir==='right'?'right':(C.lastH||'right');if(C.dir==='left'||C.dir==='right')C.lastH=C.dir;
-  const fr=CORGI[d][C.moving&&C.t<.5?1:0];ctx.drawImage(fr,X,Y-1);}
+function drawCorgi(e,cx,cy,now){const[px,py]=epos(e);const X=px-cx,Y=py-cy;ctx.fillStyle='rgba(20,15,30,.28)';ctx.fillRect(X+3,Y+13,11,2);
+  const d=e.dir==='left'?'left':e.dir==='right'?'right':(e.lastH||'right');if(e.dir==='left'||e.dir==='right')e.lastH=e.dir;
+  const fr=(S.cyber?CORGI_CY:CORGI)[d][e.moving&&e.t<.5?1:0];ctx.drawImage(fr,X,Y-1);
+  if(S.cyber&&Math.floor(now/300)%2)R(ctx,X+(d==='right'?1:14),Y+8,1,1,'#5ff2ff');}
 function marker(x,y,t){const b=Math.round(Math.sin(t/180)*1.5);R(ctx,x+5,y-14+b,6,8,'#f4efe3');R(ctx,x+4,y-13+b,8,6,'#f4efe3');R(ctx,x+7,y-12+b,2,3,'#e0a21c');R(ctx,x+7,y-8+b,2,1,'#e0a21c');R(ctx,x+7,y-6+b,2,1,'#f4efe3');}
 function render(now){
   if(S.mode==='ending'){renderEnding(now);return;}
+  if(BT){renderBattle(now);return;}
   const M=S.mode==='title'?MAPS.world:cur();ctx.fillStyle='#0b0c1c';ctx.fillRect(0,0,CW,CH_);
   let cx,cy;const mw=M.w*T,mh=M.h*T;
   if(S.mode==='title'){const span=mw-CW;cx=span>0?Math.round((Math.sin(now/9000)*.5+.5)*span):Math.round((mw-CW)/2);cy=Math.round(Math.min(Math.max(18.5*T-CH_/2,0),Math.max(0,mh-CH_)));if(mh<CH_)cy=Math.round((mh-CH_)/2);}
@@ -1420,17 +1644,21 @@ function render(now){
     const gt=M.objs.find(o=>o.k==='gate');const gx=gt.x*T-cx,gy=gt.y*T-cy;const all=S.badges.size>=7;
     for(let i=0;i<19;i++){const v=(i*2+now/60)%38;const col=all?(i%2?'#f2c14e':'#fff2b8'):(i%2?'#3fb6a8':'#2a5a78');R(ctx,gx+4,gy-6+Math.floor(v),8,1,col);}
   }
+  if(M.id==='world'&&S.bloom)drawBloom(now,cx,cy);
   // entities
   const list=M.npcs.map(n=>({y:epos(n)[1],f:()=>drawChar(n,SPR[n.id],cx,cy)}));
-  if(M===cur())list.push({y:epos(C)[1]-1,f:()=>drawCorgi(cx,cy)},{y:epos(P)[1],f:()=>drawChar(P,SPR.jeff,cx,cy)});
+  if(M===cur()){list.push({y:epos(C)[1]-1,f:()=>drawCorgi(C,cx,cy,now)},{y:epos(P)[1],f:()=>drawChar(P,SPR.jeff,cx,cy)});
+    if(S.mirror)list.push({y:epos(C2)[1]-1,f:()=>drawCorgi(C2,cx,cy,now)});}
   list.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
+  if(LOOT&&M.id==='world')drawLoot(now,cx,cy);
+  if(SING&&M.id==='ktv')drawStageLights(now,M,cx,cy);
   if(S.mode==='play'){
-    M.objs.forEach((o,i)=>{if(!o.s||S.seen.has(M.id+'#'+i))return;if(o.badge&&!S.badges.has(o.badge))return;sparkle(o.x*T+o.w*T-4-cx,o.y*T+(TOPOFF[o.k]||0)-cy,now,hash(o.x,o.y,3));});
+    M.objs.forEach((o,i)=>{if(!o.s||o.gone||S.seen.has(M.id+'#'+i))return;if(o.badge&&!S.badges.has(o.badge))return;sparkle(o.x*T+o.w*T-4-cx,o.y*T+(TOPOFF[o.k]||0)-cy,now,hash(o.x,o.y,3));});
     for(const n of M.npcs){const[px,py]=epos(n);if(n.badge&&!S.badges.has(n.badge))marker(px-cx,py-cy,now);else if(!S.seen.has(M.id+'@'+n.id))bubble(px-cx,py-cy,now);}
     for(const o of M.objs)if(o.badge&&!S.badges.has(o.badge))marker(o.x*T-cx,o.y*T-cy+10,now);
     if(canMove()&&!P.moving){const f=facing();if(f){
       if(f.kind==='obj'){const o=f.o,to=TOPOFF[o.k]||0;brackets(o.x*T-cx,o.y*T+to-cy,o.w*T,o.h*T-to,now);}
-      else{const e=f.kind==='npc'?f.n:C;const[px,py]=epos(e);brackets(px-cx,py-cy-(f.kind==='npc'?5:0),16,f.kind==='npc'?21:16,now);}}}
+      else{const e=f.kind==='npc'?f.n:(f.e||C);const[px,py]=epos(e);brackets(px-cx,py-cy-(f.kind==='npc'?5:0),16,f.kind==='npc'?21:16,now);}}}
   }
 }
 let last=performance.now();
@@ -1439,7 +1667,7 @@ function loop(now){
   if(S.mode==='play'){
     const M=cur();
     if(advance(P,dt))onArrive();
-    advance(C,dt);
+    advance(C,dt);if(S.mirror)advance(C2,dt);
     if(!P.moving&&canMove()){
       const d=heldDir();
       if(d){if(P.dir!==d&&!P.walking){P.dir=d;P.turn=.08;}else if((P.turn=(P.turn||0)-dt)<=0){P.walking=true;tryStep(d);}}
