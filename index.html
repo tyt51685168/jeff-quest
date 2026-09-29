@@ -123,6 +123,21 @@ code.mail{font-family:inherit;background:var(--void);padding:6px 10px;border-rad
 .statline div{display:flex;flex-direction:column}
 .statline b{font:700 28px var(--disp);color:var(--teal);font-weight:700}
 
+/* ending */
+#ending{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:12px;
+  padding:calc(22px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));pointer-events:none}
+#ending>*{pointer-events:auto}
+#endHead{text-align:center;text-shadow:3px 3px 0 var(--void);animation:rise .6s steps(4) both}
+#endHead .eyebrow{color:var(--teal);letter-spacing:.3em}
+#endHead .big{margin:0;font-size:clamp(30px,6vw,56px);text-wrap:balance}
+#endCard{width:min(760px,100%);max-height:58%;overflow:auto;padding:14px clamp(16px,3vw,26px) 16px;font-size:15px;line-height:1.6;
+  animation:rise .6s steps(4) .9s both;-webkit-user-select:text;user-select:text}
+#endCard p{margin:0 0 4px}
+#endCard .statline{margin:6px 0 4px}
+.endgems{display:flex;gap:3px;margin-top:4px}
+.endgems .gem{width:13px;height:13px}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+
 /* title */
 #title{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at center,rgba(11,12,28,.78) 0%,rgba(11,12,28,.55) 45%,rgba(11,12,28,.3) 100%)}
 .title-card{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:560px}
@@ -178,6 +193,7 @@ kbd{font:inherit;font-size:.8em;background:var(--gold);color:var(--void);padding
   <div id="dialog" class="win" hidden><div id="dName"></div><div id="dText"></div><div id="dChoices"></div><div id="dNext">▼</div></div>
   <div id="prompt" class="win" hidden></div>
   <div id="menu" class="win" hidden></div>
+  <div id="ending" hidden><div id="endHead"></div><div id="endCard" class="win"></div></div>
   <div id="panel" hidden><div class="win panel-win" id="panelWin"><button class="x" type="button" id="panelX">✕ ESC</button><div id="panelBody"></div></div></div>
   <div id="title">
     <div class="title-card">
@@ -1071,12 +1087,6 @@ const PANELS={
     <h3>${L(Z('語言','Languages'))}</h3><p>${L(PROFILE.langs)}</p>
     <h3>${L(Z('性格與興趣','Personality & hobbies'))}</h3><ul class="traits">${TRAITS.map(t=>`<li><b>${L(t.n)}</b>${L(t.d)}</li>`).join('')}</ul><ul style="margin-top:12px">${HOBBIES.map(h=>`<li>${L(h)}</li>`).join('')}</ul>`,
   contact:()=>`<p class="eyebrow">CONTACT</p><h2>${L(Z('聯絡 Jeff','Contact Jeff'))}</h2><p>${L(Z('正在找數據分析的下一個舞台。歡迎來信聊聊。','Looking for the next stage in data analytics. Happy to talk.'))}</p>${contactBlock()}`,
-  ending:()=>{const sec=Math.round((performance.now()-S.t0)/1000);const mm=Math.floor(sec/60),ss=String(sec%60).padStart(2,'0');
-    return `<p class="eyebrow">NEXT STAGE</p><p class="big">${L(Z('下一站：你的團隊？','Next stage: your team?'))}</p>
-    <p style="margin-top:14px">${L(Z('謝謝你走完 Jeff 的旅程。從工業管理、風險諮詢、電信數據分析，到在胡志明市把系統做出來，他的下一張地圖還空著。','Thanks for walking Jeff’s journey. Industrial management, risk consulting, telecom analytics, then building real systems in Ho Chi Minh City. His next map is still blank.'))}</p>
-    <div class="statline"><div><b>${S.badges.size}/7</b><span class="muted">${L(Z('徽章','badges'))}</span></div><div><b>${mm}:${ss}</b><span class="muted">${L(Z('遊玩時間','play time'))}</span></div><div><b>${S.visited.size}/7</b><span class="muted">${L(Z('探索地點','places visited'))}</span></div></div>
-    ${contactBlock()}
-    <div class="contact" style="margin-top:18px"><button class="btn" type="button" data-open="resume">${L(Z('看完整履歷','Read the full résumé'))}</button><button class="btn" type="button" data-close>${L(Z('繼續探索','Keep exploring'))}</button><button class="btn" type="button" data-restart>${L(Z('從頭開始','Start over'))}</button></div>`;},
 };
 function jobHTML(j){return `<div class="job"><div class="top"><span class="role">${L(j.role)}｜${L(j.org)}</span><span class="time">${esc(j.time)}</span></div>${j.lead?`<p class="lead">${L(j.lead)}</p>`:''}<ul>${j.pts.map(p=>`<li>${L(p)}</li>`).join('')}</ul></div>`;}
 function contactBlock(){return `<div class="contact"><code class="mail" id="mailTxt">${PROFILE.email}</code><button class="btn primary" type="button" data-copy>${L(Z('複製 Email','Copy email'))}</button><a class="btn" href="${PROFILE.linkedin}" target="_blank" rel="noopener">LinkedIn ↗</a></div>`;}
@@ -1094,7 +1104,7 @@ panelEl.addEventListener('click',e=>{
 });
 function copyMail(){
   const ok=()=>toast(Z('已複製 Email','Email copied'));
-  const fb=()=>{const el=$('#mailTxt');if(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);}toast(Z('已選取，請按複製','Selected. Press copy.'));};
+  const fb=()=>{const el=(PN?panelBody:document).querySelector('.mail');if(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);}toast(Z('已選取，請按複製','Selected. Press copy.'));};
   try{navigator.clipboard.writeText(PROFILE.email).then(ok,fb);}catch(e){fb();}
 }
 let toastT=0;function toast(z){const el=$('#toast');el.textContent=tx(z);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1800);}
@@ -1239,7 +1249,60 @@ function gateScript(){const k=S.badges.size;
   const end=[{fn:'ending'}];
   if(k>=7)return[nar('大門發出光芒。門上刻著：NEXT STAGE。','The gate glows. Carved above it: NEXT STAGE.'),...end];
   return[nar('門上刻著：NEXT STAGE。','Carved above the gate: NEXT STAGE.'),choice(null,Z(`你有 ${k}/7 枚徽章。要現在通過嗎？`,`You have ${k}/7 badges. Go through now?`),[Z('現在通過','Go through'),Z('再逛逛','Keep exploring')],[end,[]])];}
-FN.ending=async()=>{hideDialog();sfx.badge();await openPanel('ending');};
+FN.ending=async()=>{hideDialog();await enterEnding();};
+
+/* ================= ending: drifting through space ================= */
+const endEl=$('#ending');let END=null;
+function endHTML(){const sec=END.sec,mm=Math.floor(sec/60),ss=String(sec%60).padStart(2,'0');
+  $('#endHead').innerHTML=`<p class="eyebrow">NEXT STAGE</p><p class="big">${L(Z('下一站：你的團隊？','Next stage: your team?'))}</p>`;
+  $('#endCard').innerHTML=`<p>${L(Z('謝謝你走完 Jeff 的旅程。從工業管理、風險諮詢、電信數據分析，到在胡志明市把系統做出來，他的下一張地圖還空著。','Thanks for walking Jeff’s journey. Industrial management, risk consulting, telecom analytics, then building real systems in Ho Chi Minh City. His next map is still blank.'))}</p>
+    <div class="statline"><div><b>${S.badges.size}/7</b><span class="muted">${L(Z('徽章','badges'))}</span><span class="endgems">${BADGES.map(b=>`<span class="gem${S.badges.has(b.id)?'':' off'}" style="--c:${b.c}"></span>`).join('')}</span></div>
+    <div><b>${mm}:${ss}</b><span class="muted">${L(Z('遊玩時間','play time'))}</span></div><div><b>${S.visited.size}/7</b><span class="muted">${L(Z('探索地點','places visited'))}</span></div></div>
+    ${contactBlock()}
+    <div class="contact"><button class="btn" type="button" data-end="resume">${L(Z('看完整履歷','Read the full résumé'))}</button><button class="btn" type="button" data-end="explore">${L(Z('繼續探索','Keep exploring'))}</button><button class="btn" type="button" data-end="restart">${L(Z('從頭開始','Start over'))}</button></div>`;}
+endEl.addEventListener('click',e=>{
+  if(e.target.closest('[data-copy]')){copyMail();return;}
+  const b=e.target.closest('[data-end]');if(!b||fading)return;
+  if(b.dataset.end==='resume')openPanel('resume');else leaveEnding(b.dataset.end==='restart');
+});
+async function enterEnding(){
+  fading=true;fade(true);await wait(reduced?0:220);
+  END={t0:performance.now(),sec:Math.round((performance.now()-S.t0)/1000)};
+  S.mode='ending';$('#hud').hidden=true;$('#pad').classList.remove('on');endHTML();endEl.hidden=false;
+  fade(false);await wait(reduced?0:120);fading=false;sfx.badge();
+  setTimeout(()=>{if(END&&!PN)endEl.querySelector('[data-end="resume"]').focus({preventScroll:true});},reduced?0:1500);
+}
+async function leaveEnding(restart){
+  fading=true;fade(true);await wait(reduced?0:220);
+  endEl.hidden=true;END=null;if(restart)resetProgress();
+  S.mode='title';startGame();
+  fade(false);await wait(reduced?0:120);fading=false;
+}
+function renderEnding(now){
+  const t=reduced?4000:now-END.t0,s=t/1000;
+  R(ctx,0,0,CW,CH_,'#0b0c1c');
+  // parallax stars, far to near
+  [[1.2,6,1,'#3b3f7a'],[.6,18,1,'#aeb0d4'],[.15,60,3,'#f4efe3']].forEach(([dens,sp,len,c],L)=>{
+    const n=Math.round(CW*CH_/900*dens),W=CW+16;
+    for(let i=0;i<n;i++)R(ctx,Math.floor(((hash(i,L,11)*W-s*sp)%W+W)%W)-8,Math.floor(hash(i,L,12)*CH_),len,1,c);});
+  // a ringed planet drifting past
+  {const W=CW+140,px=Math.round(((hash(3,3,3)*W-s*3)%W+W)%W)-70,py=Math.round(CH_*.22);
+    disc(ctx,px,py,13,'#2a9d8f');disc(ctx,px-3,py-3,8,'#3fb6a8');R(ctx,px-5,py-7,3,2,'#8fe3d6');R(ctx,px-22,py+1,44,2,'#f2c14e');R(ctx,px-19,py+3,38,1,'#b3541e');}
+  // twinkles rushing by
+  for(let i=0;i<6;i++){const W=CW+20;sparkle(Math.floor(((hash(i,9,13)*W-s*90)%W+W)%W)-10,Math.floor(hash(i,9,14)*CH_),now,i);}
+  // Jeff & the corgi, floating forward on a trail made of the badges he earned
+  const k=CW>=160&&CH_>=150?2:1;
+  let cy=CH_/2;try{const h=$('#endHead').getBoundingClientRect(),c=$('#endCard').getBoundingClientRect();cy=(h.bottom+c.top)/2/SCALE;}catch(e){}
+  cy=Math.max(10*k,Math.min(CH_-10*k,cy));
+  const JX=Math.round(lerp(-40*k,CW/2-14*k,ease(s/1.6))),JY=Math.round(cy-8*k+Math.sin(t/300)*2);
+  const CX=JX+14*k,CY=Math.round(cy-6*k+Math.sin(t/300+1.4)*2);
+  const cols=BADGES.filter(b=>S.badges.has(b.id)).map(b=>b.c);if(!cols.length)cols.push('#aeb0d4');
+  const sh=2*k,top=Math.round(JY+10*k-cols.length*sh/2),seg=6*k,ph=Math.floor(t/180);
+  for(let x=JX+5*k,i=0;x>0;x-=seg,i++){const off=(i+ph)%2?k:0;cols.forEach((c,j)=>R(ctx,x-seg,top+j*sh+off,seg,sh,c));}
+  const fi=Math.floor(t/140)%2;
+  ctx.drawImage(SPR.jeff.right[fi],JX,JY,16*k,16*k);
+  ctx.drawImage(CORGI.right[fi],CX,CY,16*k,16*k);
+}
 function running(){return keys.has('ShiftLeft')||keys.has('ShiftRight')||padB;}
 
 /* ================= input ================= */
@@ -1247,6 +1310,12 @@ const keys=new Set();let dirStack=[];let padDir=null,padB=false;
 const DIRK={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
 addEventListener('keydown',e=>{
   if(PN){if(e.code==='Escape'||e.code==='KeyX'||e.code==='Backspace'){e.preventDefault();closePanel();}return;}
+  if(S.mode==='ending'){
+    const dd=DIRK[e.code];
+    if(dd){e.preventDefault();const bs=[...endEl.querySelectorAll('button,a')],n=bs.length,i=bs.indexOf(document.activeElement);
+      bs[(i<0?0:i+(dd==='right'||dd==='down'?1:-1)+n)%n].focus({preventScroll:true});sfx.sel();}
+    else if((e.code==='Escape'||e.code==='KeyX'||e.code==='KeyM')&&!fading)leaveEnding(false);
+    return;}
   const d=DIRK[e.code];
   if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();
   if(d){
@@ -1334,6 +1403,7 @@ function drawCorgi(cx,cy){const[px,py]=epos(C);const X=px-cx,Y=py-cy;ctx.fillSty
   const fr=CORGI[d][C.moving&&C.t<.5?1:0];ctx.drawImage(fr,X,Y-1);}
 function marker(x,y,t){const b=Math.round(Math.sin(t/180)*1.5);R(ctx,x+5,y-14+b,6,8,'#f4efe3');R(ctx,x+4,y-13+b,8,6,'#f4efe3');R(ctx,x+7,y-12+b,2,3,'#e0a21c');R(ctx,x+7,y-8+b,2,1,'#e0a21c');R(ctx,x+7,y-6+b,2,1,'#f4efe3');}
 function render(now){
+  if(S.mode==='ending'){renderEnding(now);return;}
   const M=S.mode==='title'?MAPS.world:cur();ctx.fillStyle='#0b0c1c';ctx.fillRect(0,0,CW,CH_);
   let cx,cy;const mw=M.w*T,mh=M.h*T;
   if(S.mode==='title'){const span=mw-CW;cx=span>0?Math.round((Math.sin(now/9000)*.5+.5)*span):Math.round((mw-CW)/2);cy=Math.round(Math.min(Math.max(18.5*T-CH_/2,0),Math.max(0,mh-CH_)));if(mh<CH_)cy=Math.round((mh-CH_)/2);}
