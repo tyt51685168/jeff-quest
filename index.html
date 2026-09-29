@@ -312,11 +312,10 @@ const TRAITS=[
   {n:Z('彈性韌性','Adaptable & resilient'),d:Z('不怕轉換領域，跌倒了也能換個姿勢重新站起來。','Not afraid to switch fields. When he falls, he finds a new way to get back up.')},
 ];
 const HOBBIES=[
-  Z('像素 RPG：寶可夢、勇者鬥惡龍、歧路旅人、Undertale','Pixel RPGs: Pokémon, Dragon Quest, Octopath Traveler, Undertale'),
-  Z('Path of Exile（會自己調物品過濾器的那種玩家）','Path of Exile (the kind of player who tunes his own loot filter)'),
-  Z('動畫與世界觀設定','Anime and world-building'),
-  Z('打造療癒系奇幻世界的創作計畫','A cozy-fantasy creative world in progress'),
-  Z('Side project：App 概念、商業模式試算','Side projects: app concepts, business-model math'),
+  Z('熱愛遊戲：寶可夢、石器時代、星之卡比、王國之心、魔物獵人、英雄聯盟、Path of Exile','Loves games: Pokémon, StoneAge, Kirby, Kingdom Hearts, Monster Hunter, League of Legends, Path of Exile'),
+  Z('喜歡日本動漫：乒乓、葬送的芙莉蓮、獵人、吉伊卡哇、瑠璃龍龍','Japanese anime & manga: Ping Pong the Animation, Frieren: Beyond Journey’s End, Hunter × Hunter, Chiikawa, Ruri Dragon'),
+  Z('對遊戲、動漫與奇幻世界的喜愛，實在族繁不及備載','His love of games, anime and fantasy worlds goes on far beyond this list'),
+  Z('最喜歡的歌手是 ZUTOMAYO 的 ACAね，最喜歡的團體是 NewJeans','Favorite singer: ACAね of ZUTOMAYO. Favorite group: NewJeans'),
 ];
 const SKILLS=[
   {n:Z('數據分析','Data Analysis'),c:'#f2c14e',items:['A/B testing','SQL',Z('統計','Statistics'),Z('迴歸','Regression'),Z('問題框定','Problem framing'),Z('資料說故事','Storytelling')]},
@@ -441,7 +440,7 @@ const INT={
     obj:[
       {k:'window',x:5,y:1,w:2,moon:1,s:[nar('窗外是一顆好大的月亮。','A huge moon hangs outside the window.'),nar('Jeff 正在構築一個療癒系的奇幻世界：星空、暖黃色的咖啡館，還有一隻賽博柯基。','Jeff is building a cozy-fantasy world: starry skies, warm amber cafés, and a cyber corgi.'),say('corgi','……那隻柯基，該不會是我吧？','...wait. Is that corgi me?')]},
       {k:'mirror',x:10,y:1,badge:'heart',s:[nar('鏡子裡的人看著你。','The person in the mirror looks back at you.'),panel('status'),badge('heart')]},
-      {k:'tv',x:1,y:2,w:2,s:[nar('電視上跑著一款像素 RPG。','A pixel RPG is running on the TV.'),nar('寶可夢、勇者鬥惡龍、歧路旅人、Undertale：Jeff 最喜歡的就是這種遊戲。','Pokémon, Dragon Quest, Octopath Traveler, Undertale. These are Jeff’s favorite kind of game.'),nar('所以這份履歷，也做成了一款遊戲。','So this résumé became one too.')]},
+      {k:'tv',x:1,y:2,w:2,s:[nar('電視上跑著一款像素 RPG。','A pixel RPG is running on the TV.'),nar('寶可夢、石器時代、星之卡比、王國之心……Jeff 從小就愛玩遊戲。','Pokémon, StoneAge, Kirby, Kingdom Hearts... Jeff has loved games since he was a kid.'),nar('所以這份履歷，也做成了一款遊戲。','So this résumé became one too.')]},
       {k:'bookshelf',x:3,y:2,w:2,s:[nar('動畫、設定集、世界觀筆記。','Anime, art books, world-building notes.'),nar('他喜歡從零打造一個世界：地圖、角色、光線、氣氛，全部自己定。','He likes building worlds from zero: the map, the characters, the light, the mood.')]},
       {k:'pc',x:8,y:2,w:2,screen:'#8a2b2b',s:[nar('螢幕上開著 Path of Exile。','Path of Exile is open on the screen.'),nar('他會自己改 NeverSink 物品過濾器，連掉寶的分級都要調到順眼。','He edits his own NeverSink loot filter, down to how each drop is tiered.'),nar('嗯。連玩遊戲都在做資料分類。','Yes. Even his gaming involves data classification.')]},
       {k:'globe',x:1,y:5,s:[nar('【語言技能】','[Languages]'),nar('中文（母語）・English（工作語言）・台語・客語','Mandarin (native) · English (working language) · Taiwanese Hokkien · Hakka')]},
@@ -835,8 +834,8 @@ const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
 const lerp=(a,b,k)=>a+(b-a)*k;
 
 const ILL={
-rpg:{ey:'HOBBY · PIXEL RPG',ti:Z('像素 RPG','Pixel RPGs'),
-  cap:[Z('最愛：寶可夢、勇者鬥惡龍、歧路旅人、Undertale。','Favorites: Pokémon, Dragon Quest, Octopath Traveler, Undertale.'),Z('所以這份履歷，也做成了一款遊戲。','So this résumé became one too.')],
+rpg:{ey:'HOBBY · GAMES',ti:Z('熱愛遊戲','Loves games'),
+  cap:[Z('最愛：寶可夢、石器時代、星之卡比、王國之心、魔物獵人、英雄聯盟、Path of Exile。','Favorites: Pokémon, StoneAge, Kirby, Kingdom Hearts, Monster Hunter, League of Legends, Path of Exile.'),Z('所以這份履歷，也做成了一款遊戲。','So this résumé became one too.')],
   draw(g,t){R(g,0,0,IW,IH,'#7cc36a');for(let i=0;i<46;i++)R(g,(hash(i,1,3)*150)|0,(hash(i,2,3)*60)|0,2,1,'#63aa58');
     R(g,150,0,42,62,'#3f86c6');R(g,150,0,2,62,'#bfe3f5');for(let i=0;i<5;i++){const ox=((t/70+i*13)%34)|0;R(g,154+ox,6+i*11,4,1,'#9fd0f0');}
     R(g,0,62,150,12,'#e3c58d');R(g,0,62,150,1,'#c9a86f');R(g,150,62,42,12,'#b98a55');for(let x=150;x<192;x+=4)R(g,x,62,1,12,'#8a6238');R(g,0,74,IW,34,'#6fb35f');
